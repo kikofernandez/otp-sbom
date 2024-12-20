@@ -101,6 +101,9 @@ cli() ->
                                                 apply_excludes(),
                                                 apply_curations() ],
                                  handler => fun classify/1},
+                          "reuse" =>
+                                #{arguments => [input_option(?default_classified_result)],
+                                  handler => fun reuse/1},
                           "diff" =>
                               #{ help =>
                                      """
@@ -292,6 +295,32 @@ path_to_copyright(Input, _Licenses) ->
 classify(#{output_file := Output}=Input) ->
     R = group_by_licenses(Input),
     ok = file:write_file(Output, json:encode(R)).
+
+reuse(#{input_file := Input}) ->
+    Json = decode(Input),
+    maps:foreach(fun(K, V) when K =/= ~"NONE" ->
+                         Vs = lists:map(fun erlang:binary_to_list/1, V),
+                         %% Filter Erlang files
+                         Vs1 = lists:filtermap(fun(X) when X =/= "erts/test/erlc_SUITE_data/src/😀/erl_test_unicode.erl" ->
+                                              case lists:reverse(X) of
+                                                  "lre."++_ ->
+                                                      {true, X ++ " "};
+                                                  _ ->
+                                                      false
+                                              end;
+                                         (_) ->
+                                              false
+                                      end, Vs),
+                         Ks = erlang:binary_to_list(K),
+                         Command = "cd otp && reuse annotate --license \"" ++ Ks ++ "\" " ++ Vs1,
+                         %% lists:foreach(fun (X) ->
+                                               %% Command0 = Command ++ erlang:binary_to_list(X),
+                                               %% io:format("~p~n", [Command0]),
+                         os:cmd(Command);
+                                       %% end, V);
+                    (_, _) ->
+                         ok
+                 end, Json).
 
 group_by_licenses(#{input_file := Filename,
                     exclude := ApplyExclude,
