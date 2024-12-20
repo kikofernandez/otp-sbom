@@ -297,30 +297,7 @@ classify_license(#{output_file := Output}=Input) ->
     ok = file:write_file(Output, json:encode(R)).
 
 reuse(#{input_file := Input}) ->
-    Json = decode(Input),
-    maps:foreach(fun(K, V) when K =/= ~"NONE" ->
-                         Vs = lists:map(fun erlang:binary_to_list/1, V),
-                         %% Filter Erlang files
-                         Vs1 = lists:filtermap(fun(X) when X =/= "erts/test/erlc_SUITE_data/src/😀/erl_test_unicode.erl" ->
-                                              case lists:reverse(X) of
-                                                  "lre."++_ ->
-                                                      {true, X ++ " "};
-                                                  _ ->
-                                                      false
-                                              end;
-                                         (_) ->
-                                              false
-                                      end, Vs),
-                         Ks = erlang:binary_to_list(K),
-                         Command = "cd otp && reuse annotate --license \"" ++ Ks ++ "\" " ++ Vs1,
-                         %% lists:foreach(fun (X) ->
-                                               %% Command0 = Command ++ erlang:binary_to_list(X),
-                                               %% io:format("~p~n", [Command0]),
-                         os:cmd(Command);
-                                       %% end, V);
-                    (_, _) ->
-                         ok
-                 end, Json).
+    reuse:main(Input).
 
 group_by_licenses(#{input_file := Filename,
                     exclude := ApplyExclude,
