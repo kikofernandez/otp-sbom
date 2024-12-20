@@ -87,7 +87,7 @@ cli() ->
 
                             """,
                     commands =>
-                        #{"classify" =>
+                        #{"classify-license" =>
                               #{ help =>
                                      """
                                      Classify files by their license group.
@@ -100,7 +100,7 @@ cli() ->
                                                 output_option(?default_classified_result),
                                                 apply_excludes(),
                                                 apply_curations() ],
-                                 handler => fun classify/1},
+                                 handler => fun classify_license/1},
                           "reuse" =>
                                 #{arguments => [input_option(?default_classified_result)],
                                   handler => fun reuse/1},
@@ -292,7 +292,7 @@ path_to_copyright(Input, _Licenses) ->
                       maps:merge(maps:from_keys(Vs, K), Acc)
               end, #{}, ClassifyCopyright).
 
-classify(#{output_file := Output}=Input) ->
+classify_license(#{output_file := Output}=Input) ->
     R = group_by_licenses(Input),
     ok = file:write_file(Output, json:encode(R)).
 
