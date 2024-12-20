@@ -330,16 +330,17 @@ reuse(#{input_file := Input, base_file := ScanResultFile}) ->
                                end, #{}, CopyrightInfo),
     {ok, Bin} = file:read_file(Input),
     Json = json:decode(Bin),
-    maps:foreach(fun (License, ListOfBin) when License =/= ~"NONE" ->
-                         io:format("~s~n", [License]),
-                         Files = lists:map(fun erlang:binary_to_list/1, ListOfBin),
-                         %% filter_erlang(erlang:binary_to_list(License), Files);
-                         %% filter_md(erlang:binary_to_list(License), Files);
-                         filter_c(erlang:binary_to_list(License), CopyrightInfo1, Files);
-                     (~"NONE", _) ->
-                         io:format("~s~n", [~"NONE"]),
-                         skip
-                 end, Json).
+    _ = maps:foreach(fun (License, ListOfBin) when License =/= ~"NONE" ->
+                             io:format("~s~n", [License]),
+                             Files = lists:map(fun erlang:binary_to_list/1, ListOfBin),
+                             %% filter_erlang(erlang:binary_to_list(License), Files);
+                             %% filter_md(erlang:binary_to_list(License), Files);
+                             filter_c(erlang:binary_to_list(License), CopyrightInfo1, Files);
+                         (~"NONE", _) ->
+                             io:format("~s~n", [~"NONE"]),
+                             skip
+                     end, Json),
+    generate_toml(maps:keys(CopyrightInfo1)).
 
 
 group_by_licenses(#{input_file := Filename,
@@ -551,53 +552,61 @@ curated_path_license(Name, Path, [_Cur | Curations]) ->
 %%
 
 filter_erlang(License, Copyrights, Vs) ->
-    Vs1 = lists:filter(fun(X) when X =/= "erts/test/erlc_SUITE_data/src/😀/erl_test_unicode.erl" orelse
-                                   X =/= "erts/test/erlc_SUITE_data/src/ð/erl_test_unicode.erl" orelse
-                                   X =/= "lib/ssh/src/ssh.erl"->
-                              case lists:reverse(X) of
-                                  "lre."++_ ->
-                                      true;
-                                  "lrh."++_ ->
-                                      true;
-                                  "tpircse."++_ ->
-                                      true;
-                                  _ ->
-                                      false
-                              end;
-                         (_) ->
-                              false
-                      end, Vs),
+    Vs1 = lists:filter(fun erlang_filtering/1, Vs),
     add_license(License, Copyrights, Vs1).
 
 filter_md(License, Copyrights, Vs) ->
-    Vs1 = lists:filter(fun(X) ->
-                         case lists:reverse(X) of
-                             "dm."++_ ->
-                                 true;
-                             _ ->
-                                 false
-                         end
-                 end, Vs),
+    Vs1 = lists:filter(fun md_filtering/1, Vs),
     add_license(License, Copyrights, Vs1).
 
 
 %% Vs :: [string()]
 filter_c(License, Copyrights, Vs) ->
-    Vs1 = lists:filter(fun(X) ->
-                         case lists:reverse(X) of
-                             "c."++_ ->
-                                 true;
-                             "ppc."++_ ->
-                                 true;
-                             "h."++_ ->
-                                 true;
-                             "pph."++_ ->
-                                 true;
-                             _ ->
-                                 false
-                         end
-                      end, Vs),
+    Vs1 = lists:filter(fun c_filtering/1, Vs),
     add_license(License, Copyrights, Vs1).
+
+%%
+%% Filtering functions
+%%
+c_filtering(X) ->
+    case lists:reverse(X) of
+        "c."++_ ->
+            true;
+        "ppc."++_ ->
+            true;
+        "h."++_ ->
+            true;
+        "pph."++_ ->
+            true;
+        _ ->
+            false
+    end.
+
+md_filtering(X) ->
+    case lists:reverse(X) of
+        "dm."++_ ->
+            true;
+        _ ->
+            false
+    end.
+
+erlang_filtering(X)
+  when X =/= "erts/test/erlc_SUITE_data/src/😀/erl_test_unicode.erl" orelse
+       X =/= "erts/test/erlc_SUITE_data/src/ð/erl_test_unicode.erl" orelse
+       X =/= "lib/ssh/src/ssh.erl"->
+    case lists:reverse(X) of
+        "lre."++_ ->
+            true;
+        "lrh."++_ ->
+            true;
+        "tpircse."++_ ->
+            true;
+        _ ->
+            false
+    end;
+erlang_filtering(_) ->
+    false.
+
 
 -spec add_license(License :: string(), Copyrights :: #{string() => string()}, LL :: [File]) -> ok
               when File :: string().
@@ -626,4 +635,10 @@ add_license(License, Copyrights, LL) ->
                         end
                   end, LL).
 
-generate_toml() ->
+-spec generate_toml(Files :: [string()]) -> ok.
+generate_toml(Files) ->
+    UnmodifiableFiles = lists:filter(fun(File) ->
+                                             not c_filtering(File) orelse not md_filtering(File) orelse not erlang_filtering(File)
+                                     end, [], Files).
+%% I need to map again copyright and license to these files, so something similar to the add_license but that writes to a TOML file
+%% TODO we need to generate a TOML file with the files that we do not add a license.
