@@ -101,8 +101,19 @@ cli() ->
                                                 apply_excludes(),
                                                 apply_curations() ],
                                  handler => fun classify_license/1},
+                          "classify-copyright" =>
+                              #{ help =>
+                                     """
+                                     Pair files with their copyright.
+
+                                     """,
+                                 arguments => [ input_option(?default_scan_result),
+                                                output_option() ],
+                                 handler => fun classify_copyright/1},
                           "reuse" =>
-                                #{arguments => [input_option(?default_classified_result)],
+                                #{arguments => [input_option(?default_classified_result),
+                                                base_file() % scan-result.json
+                                               ],
                                   handler => fun reuse/1},
                           "diff" =>
                               #{ help =>
@@ -296,8 +307,40 @@ classify_license(#{output_file := Output}=Input) ->
     R = group_by_licenses(Input),
     ok = file:write_file(Output, json:encode(R)).
 
-reuse(#{input_file := Input}) ->
-    reuse:main(Input).
+classify_copyright(#{output_file := Output,
+                     input_file := Filename}) ->
+    X = classify_copyright_result(Filename),
+    ok = file:write_file(Output, json:encode(X)).
+
+classify_copyright_result(Filename) ->
+    Json = decode(Filename),
+    Copyrights = copyrights(scan_results(Json)),
+    lists:foldl(fun (Copyright, Acc) ->
+                        #{<<"statement">> := CopyrightSt, <<"location">> := Location} = Copyright,
+                        #{<<"path">> := Path, <<"start_line">> := _StartLine, <<"end_line">> := _EndLine} = Location,
+                        Acc#{Path => CopyrightSt}
+                    end, #{}, Copyrights).
+
+
+reuse(#{input_file := Input, base_file := ScanResultFile}) ->
+    %% reuse:main(Input, classify_copyright_result(ScanResultFile)).
+    CopyrightInfo = classify_copyright_result(ScanResultFile),
+    CopyrightInfo1 = maps:fold(fun(K, V, Acc) ->
+                                       Acc#{erlang:binary_to_list(K) => erlang:binary_to_list(V)}
+                               end, #{}, CopyrightInfo),
+    {ok, Bin} = file:read_file(Input),
+    Json = json:decode(Bin),
+    maps:foreach(fun (License, ListOfBin) when License =/= ~"NONE" ->
+                         io:format("~s~n", [License]),
+                         Files = lists:map(fun erlang:binary_to_list/1, ListOfBin),
+                         %% filter_erlang(erlang:binary_to_list(License), Files);
+                         %% filter_md(erlang:binary_to_list(License), Files);
+                         filter_c(erlang:binary_to_list(License), CopyrightInfo1, Files);
+                     (~"NONE", _) ->
+                         io:format("~s~n", [~"NONE"]),
+                         skip
+                 end, Json).
+
 
 group_by_licenses(#{input_file := Filename,
                     exclude := ApplyExclude,
@@ -502,3 +545,85 @@ curated_path_license(_Name, Path, [#{<<"path">> := Path}=Cur | _Curations]) ->
     maps:get(<<"concluded_license">>, Cur);
 curated_path_license(Name, Path, [_Cur | Curations]) ->
     curated_path_license(Name, Path, Curations).
+
+%%
+%% ReUse Functions
+%%
+
+filter_erlang(License, Copyrights, Vs) ->
+    Vs1 = lists:filter(fun(X) when X =/= "erts/test/erlc_SUITE_data/src/😀/erl_test_unicode.erl" orelse
+                                   X =/= "erts/test/erlc_SUITE_data/src/ð/erl_test_unicode.erl" orelse
+                                   X =/= "lib/ssh/src/ssh.erl"->
+                              case lists:reverse(X) of
+                                  "lre."++_ ->
+                                      true;
+                                  "lrh."++_ ->
+                                      true;
+                                  "tpircse."++_ ->
+                                      true;
+                                  _ ->
+                                      false
+                              end;
+                         (_) ->
+                              false
+                      end, Vs),
+    add_license(License, Copyrights, Vs1).
+
+filter_md(License, Copyrights, Vs) ->
+    Vs1 = lists:filter(fun(X) ->
+                         case lists:reverse(X) of
+                             "dm."++_ ->
+                                 true;
+                             _ ->
+                                 false
+                         end
+                 end, Vs),
+    add_license(License, Copyrights, Vs1).
+
+
+%% Vs :: [string()]
+filter_c(License, Copyrights, Vs) ->
+    Vs1 = lists:filter(fun(X) ->
+                         case lists:reverse(X) of
+                             "c."++_ ->
+                                 true;
+                             "ppc."++_ ->
+                                 true;
+                             "h."++_ ->
+                                 true;
+                             "pph."++_ ->
+                                 true;
+                             _ ->
+                                 false
+                         end
+                      end, Vs),
+    add_license(License, Copyrights, Vs1).
+
+-spec add_license(License :: string(), Copyrights :: #{string() => string()}, LL :: [File]) -> ok
+              when File :: string().
+add_license(License, Copyrights, LL) ->
+    ok = c:cd("otp"),
+    Defaults = #{"erts/emulator/beam/erl_db_hash.c" => "Copyright Ericsson AB 1998-2024"},
+    lists:foreach(fun (File) ->
+                          try
+                              %% _ = io:format("File: ~p --> ~p~n", [BinFile, Defaults]),
+                              Default = maps:get(File, Defaults, error),
+                              _ = io:format("File: ~p --> ~p~n", [File, maps:get(File, Copyrights, Default)]),
+                              maps:get(File, Copyrights, Default)
+                          of
+                              Cpr ->
+                                  Command = "reuse annotate --no-replace --license \""++ License ++
+                                      "\" --copyright \"" ++ Cpr ++ "\" " ++ File,
+                                  %% use line below if you want to skip files that already contains reuse licenses
+                                  %% "\" --copyright \"" ++ Cpr ++ "\" --skip-existing " ++ File,
+                                  Command1 = Command ++ " && dos2unix " ++ File,
+                                  io:format("~p~n", [Command1]),
+                                  Result = os:cmd(Command1),
+                                  io:format("~s~n", [erlang:list_to_binary(Result)])
+                        catch
+                            _:_ ->
+                                io:format("[NoCopyright]~p~n", [File])
+                        end
+                  end, LL).
+
+generate_toml() ->
