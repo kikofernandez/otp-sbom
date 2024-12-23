@@ -101,20 +101,27 @@ cli() ->
                                                 apply_excludes(),
                                                 apply_curations() ],
                                  handler => fun classify_license/1},
-                          "classify-copyright" =>
+                          "classify-license-copyright" =>
                               #{ help =>
                                      """
-                                     Pair files with their copyright.
+                                     Pair files with their copyright and license.
+                                     Depends on a `scan-result.json` and the output of the `classify-license`.
 
                                      """,
                                  arguments => [ input_option(?default_scan_result),
+                                                base_file(?default_classified_result),
                                                 output_option() ],
-                                 handler => fun classify_copyright/1},
+                                 handler => fun classify_path_license_copyright/1},
                           "reuse" =>
-                                #{arguments => [input_option(?default_classified_result),
+                                #{ help =>
+                                       """
+                                       Calls reuse tool. BaseFile expects a scan-result.json file.
+
+                                       """,
+                                   arguments => [input_option(?default_classified_result),
                                                 base_file() % scan-result.json
                                                ],
-                                  handler => fun reuse/1},
+                                   handler => fun reuse/1},
                           "diff" =>
                               #{ help =>
                                      """
@@ -210,6 +217,12 @@ base_file() ->
     #{name => base_file,
       type => binary,
       long => "-base-file"}.
+base_file(DefaultFile) ->
+    #{name => base_file,
+      type => binary,
+      default => DefaultFile,
+      long => "-base-file"}.
+
 
 %%
 %% Commands
@@ -313,10 +326,24 @@ classify_license(#{output_file := Output}=Input) ->
     R = group_by_licenses(Input),
     ok = file:write_file(Output, json:encode(R)).
 
-classify_copyright(#{output_file := Output,
-                     input_file := Filename}) ->
-    X = classify_copyright_result(Filename),
+classify_path_license_copyright(#{output_file := Output,
+                     input_file := Filename,
+                     base_file  := LicenseFileGroup}) ->
+    Copyrights = classify_copyright_result(Filename),
+    Licenses = expand_license_result(LicenseFileGroup),
+    Files = lists:sort(lists:uniq(maps:keys(Copyrights) ++ maps:keys(Licenses))),
+    X = lists:foldl(fun (Path, Acc) ->
+                          Copyright = maps:get(Path, Copyrights, ~"NONE"),
+                          License = maps:get(Path, Licenses, ~"NONE"),
+                          Acc#{Path => #{ ~"Copyright" => Copyright, ~"License" => License}}
+                    end, #{}, Files),
     ok = file:write_file(Output, json:encode(X)).
+
+expand_license_result(Filename) ->
+    Json = decode(Filename),
+    maps:fold(fun (License, Paths, Acc) ->
+                      maps:merge(Acc, maps:from_list([{Path, License} || Path <- Paths]))
+              end, #{}, Json).
 
 classify_copyright_result(Filename) ->
     Json = decode(Filename),
