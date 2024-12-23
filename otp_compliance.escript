@@ -593,10 +593,10 @@ md_filtering(X) ->
             false
     end.
 
-erlang_filtering(X)
-  when X =/= "erts/test/erlc_SUITE_data/src/😀/erl_test_unicode.erl" orelse
-       X =/= "erts/test/erlc_SUITE_data/src/ð/erl_test_unicode.erl" orelse
-       X =/= "lib/ssh/src/ssh.erl"->
+erlang_filtering(X) ->
+  %% when X =/= "erts/test/erlc_SUITE_data/src/😀/erl_test_unicode.erl" orelse
+  %%      X =/= "erts/test/erlc_SUITE_data/src/ð/erl_test_unicode.erl" orelse
+  %%      X =/= "lib/ssh/src/ssh.erl" ->
     case lists:reverse(X) of
         "lre."++_ ->
             true;
@@ -604,12 +604,13 @@ erlang_filtering(X)
             true;
         "tpircse."++_ ->
             true;
+        "lrx."++_ ->
+            true;
+        "lry."++_ ->
+            true;
         _ ->
             false
-    end;
-erlang_filtering(_) ->
-    false.
-
+    end.
 
 -spec add_license(License :: string(), Copyrights :: #{string() => string()}, LL :: [File]) -> ok
               when File :: string().
