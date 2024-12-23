@@ -216,19 +216,24 @@ base_file() ->
 %%
 
 sbom_otp(#{sbom_file  := SbomFile}=Input) ->
-    Sbom = decode(SbomFile),
     Licenses = path_to_license(Input),
     Copyrights = path_to_copyright(Input, Licenses),
 
     Fixes = [{fun fix_name/2, ~"Erlang/OTP"},
+             {fun fix_creators_tooling/2, ~"Tool: otp_compliance"},
              {fun fix_supplier/2, ~"Organization: Ericsson AB"},
              {fun fix_download_location/2, ~"https://github.com/erlang/otp/releases"},
              {fun fix_beam_licenses/2, {Licenses, Copyrights}} ],
+    Sbom = decode(SbomFile),
     Spdx = lists:foldl(fun ({Fun, Data}, Acc) -> Fun(Data, Acc) end, Sbom, Fixes),
     file:write_file(SbomFile, json:encode(Spdx)).
 
 fix_name(Name, Sbom) ->
     Sbom#{ ~"name" := Name}.
+
+fix_creators_tooling(Tool, #{ ~"creationInfo" := #{~"creators" := [ORT | _]}=Creators}=Sbom) ->
+    SHA = list_to_binary(string:trim(".sha." ++ os:cmd("git rev-parse HEAD"))),
+    Sbom#{~"creationInfo" := Creators#{ ~"creators" := [ORT, <<Tool/binary, SHA/binary>>]}}.
 
 fix_supplier(Name, #{~"packages" := [ Packages ] }=Sbom) ->
     Sbom#{~"packages" := [maps:update_with(~"supplier", fun(_) -> Name end, Name, Packages)]}.
@@ -290,7 +295,8 @@ fix_spdx_license(SPDX) ->
 %% Given an input file, returns a mapping of
 %% #{filepath => license} for each file path towards its license.
 path_to_license(Input) ->
-    ClassifyInput = Input#{ exclude => true, curations => true},
+    ClassifyInput = Input#{ exclude => true,
+                            curations => false},
     ClassifyLicense = group_by_licenses(ClassifyInput),
     maps:fold(fun (K, Vs, Acc) ->
                       maps:merge(maps:from_keys(Vs, K), Acc)
@@ -331,7 +337,6 @@ reuse(#{input_file := Input, base_file := ScanResultFile}) ->
     {ok, Bin} = file:read_file(Input),
     Json = json:decode(Bin),
     _ = maps:foreach(fun (License, ListOfBin) when License =/= ~"NONE" ->
-                             io:format("~s~n", [License]),
                              Files = lists:map(fun erlang:binary_to_list/1, ListOfBin),
                              %% filter_erlang(erlang:binary_to_list(License), Files);
                              %% filter_md(erlang:binary_to_list(License), Files);
@@ -366,12 +371,10 @@ group_by_copyrights(#{input_file := Filename,
 
 
 apply_excludes(Json, ApplyExclude) ->
-    Excludes = excludes(Json),
-    onlyif([], ApplyExclude, fun () -> convert_excludes(Excludes) end).
+    onlyif([], ApplyExclude, fun () -> convert_excludes(excludes(Json)) end).
 
 apply_curations(Json, ApplyCuration) ->
-    Curations = curations(Json),
-    onlyif([], ApplyCuration, fun () -> Curations end).
+    onlyif([], ApplyCuration, fun () -> curations(Json) end).
 
 diff(#{input_file := InputFile, base_file := BaseFile, output_file := Output}) ->
     Input = decode(InputFile),
@@ -617,7 +620,7 @@ add_license(License, Copyrights, LL) ->
                           try
                               %% _ = io:format("File: ~p --> ~p~n", [BinFile, Defaults]),
                               Default = maps:get(File, Defaults, error),
-                              _ = io:format("File: ~p --> ~p~n", [File, maps:get(File, Copyrights, Default)]),
+                              %% _ = io:format("File: ~p --> ~p~n", [File, maps:get(File, Copyrights, Default)]),
                               maps:get(File, Copyrights, Default)
                           of
                               Cpr ->
@@ -626,7 +629,7 @@ add_license(License, Copyrights, LL) ->
                                   %% use line below if you want to skip files that already contains reuse licenses
                                   %% "\" --copyright \"" ++ Cpr ++ "\" --skip-existing " ++ File,
                                   Command1 = Command ++ " && dos2unix " ++ File,
-                                  io:format("~p~n", [Command1]),
+                                  %% io:format("~p~n", [Command1]),
                                   Result = os:cmd(Command1),
                                   io:format("~s~n", [erlang:list_to_binary(Result)])
                         catch
