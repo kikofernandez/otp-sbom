@@ -43,5 +43,5 @@ ort:
   analyzer:
     allowDynamicVersions: true
     enabledPackageManagers: [Unmanaged]
-  #   # A flag to control whether excluded scopes and paths should be skipped during the analysis.
+    # A flag to control whether excluded scopes and paths should be skipped during the analysis.
     skipExcluded: true

@@ -4,24 +4,21 @@
 # @file
 # @version 0.1
 
-download_ort:
-	git clone -b kiko/add-license-info-from-files/GH-8485 git@github.com:kikofernandez/ort.git
+cwd=$(PWD)
 
-install-prerequisites: adoptium
-
-otp:
-	git clone git@github.com:erlang/otp.git
-
-adoptium:
-	sudo apt-get install -y temurin-21-jdk
+install: ort otp
 
 ort:
-	git clone git@github.com:kikofernandez/ort.git && git checkout kiko/erlang-sbom
+	git clone -b kiko/erlang-sbom https://github.com/kikofernandez/ort.git
+
+otp:
+	git clone -b maint https://github.com/erlang/otp.git
 
 # TODO: add flags for config.yml and other files:
 # - evaluator: license_classifications.yml
 analyze:
-	./../ort/gradlew cli:run --args="analyze -i $PWD/otp -o . -f JSON --repository-configuration-file=$PWD/.ort.yml"
+	cd ort && \
+	./gradlew cli:run --args="-c $(cwd)/config.yml analyze -i $(cwd)/otp -o . -f JSON --repository-configuration-file=$(cwd)/.ort.yml"
     # ./gradlew cli:run --args="analyze -i $PWD/../otp -o . -f JSON --repository-configuration-file=$PWD/.ort.yml"
 
 scan:
@@ -34,5 +31,14 @@ report:
 fix-sbom:
 	./otp_compliance.escript sbom otp-info --sbom-file bom.spdx.json --input-file scan-result.json
 
-all: adoptium otp analyze scan report fix-sbom
+docker-build:
+	docker build --tag sbom \
+            --build-arg MAKEFLAGS=-j$(($(nproc) + 2)) \
+            --file "Dockerfile" \
+            .
+	# docker run sbom "make "
+	# docker pull eclipse-temurin:21-jdk-alpine
+	# docker run -it -v $PWD/:/github --network host eclipse-temurin:21-jre-alpine /bin/sh
+
+all: install
 # end
