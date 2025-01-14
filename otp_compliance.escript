@@ -112,17 +112,7 @@ cli() ->
                                                 base_file(?default_classified_result),
                                                 output_option() ],
                                  handler => fun classify_path_license_copyright/1},
-                          %% "reuse" =>
-                          %%       #{ help =>
-                          %%              """
-                          %%              Calls reuse tool. BaseFile expects a scan-result.json file.
-                          %%              Adds annotations to Erlang, C, and markdown files.
 
-                          %%              """,
-                          %%          arguments => [input_option(?default_classified_result),
-                          %%                       base_file() % scan-result.json
-                          %%                      ],
-                          %%          handler => fun reuse/1},
                           "reuse-gen-toml" =>
                               #{ help =>
                                      """
@@ -365,27 +355,11 @@ classify_copyright_result(Filename) ->
                     end, #{}, Copyrights).
 
 
-%% reuse(#{input_file := Input, base_file := ScanResultFile}) ->
-%%     %% reuse:main(Input, classify_copyright_result(ScanResultFile)).
-%%     CopyrightInfo = classify_copyright_result(ScanResultFile),
-%%     CopyrightInfo1 = maps:fold(fun(K, V, Acc) ->
-%%                                     Acc#{erlang:binary_to_list(K) => erlang:binary_to_list(V)}
-%%                                end, #{}, CopyrightInfo),
-%%     {ok, Bin} = file:read_file(Input),
-%%     Json = json:decode(Bin),
-%%     _ = maps:foreach(fun (License, ListOfBin) when License =/= ~"NONE" ->
-%%                              Files = lists:map(fun erlang:binary_to_list/1, ListOfBin),
-%%                              %% filter_erlang(erlang:binary_to_list(License), Files);
-%%                              %% filter_md(erlang:binary_to_list(License), Files);
-%%                              filter_c(erlang:binary_to_list(License), CopyrightInfo1, Files);
-%%                          (~"NONE", _) ->
-%%                              io:format("~s~n", [~"NONE"]),
-%%                              skip
-%%                      end, Json).
-    %% generate_toml(maps:keys(CopyrightInfo1)).
-
 reuse_gen_toml(#{input_file := Input}) ->
     Json = decode(Input),
+    GitIgnore = lists:foldl(fun (Path, Acc) ->
+                        add_annotation(Path, "LicenseRef-erlang-contributors", "Erlang/OTP contributors") ++ Acc
+                end, "", gitignore_files()),
     Result = maps:fold(fun(Path, #{~"Copyright" := C, ~"License" := L}, Acc) ->
                                LicenseString = case L of
                                                    ~"NONE" ->
@@ -401,14 +375,16 @@ reuse_gen_toml(#{input_file := Input}) ->
                                                      _ ->
                                                          C
                                                  end,
-                               LicenseId = io_lib:format("SPDX-License-Identifier = \"~s\"\n", [LicenseString]),
-                               CopyrightId = io_lib:format("SPDX-FileCopyrightText = \"~s\"\n", [CopyrightString]),
-                               io_lib:format("[[annotations]]\npath = \"~s\"\n~s~s\n",
-                                             [Path, LicenseId, CopyrightId]) ++ Acc
-                       end, "", Json),
+                               add_annotation(Path, LicenseString, CopyrightString) ++ Acc
+                       end, GitIgnore, Json),
     TOML = "version = 1\n~n" ++ Result,
     io:format(TOML).
 
+add_annotation(Path, License, Copyright) ->
+    LicenseId = io_lib:format("SPDX-License-Identifier = \"~s\"\n", [License]),
+    CopyrightId = io_lib:format("SPDX-FileCopyrightText = \"~s\"\n", [Copyright]),
+    io_lib:format("[[annotations]]\npath = \"~s\"\n~s~s\n",
+                  [Path, LicenseId, CopyrightId]).
 
 group_by_licenses(#{input_file := Filename,
                     exclude := ApplyExclude,
@@ -612,99 +588,77 @@ curated_path_license(_Name, Path, [#{<<"path">> := Path}=Cur | _Curations]) ->
 curated_path_license(Name, Path, [_Cur | Curations]) ->
     curated_path_license(Name, Path, Curations).
 
-%%
-%% ReUse Functions
-%%
+gitignore_files() ->
+    [".gitattributes",
+     ".gitignore",
+     "erts/.gitignore",
+     "erts/doc/assets/.gitignore",
+     "erts/doc/src/.gitignore",
+     "erts/emulator/internal_doc/assets/.gitignore",
+     "erts/lib_src/yielding_c_fun/.gitignore",
+     "erts/lib_src/yielding_c_fun/lib/simple_c_gc/.gitignore",
+     "erts/lib_src/yielding_c_fun/test/examples/sha256_erlang_nif/.gitignore",
+     "erts/lib_src/yielding_c_fun/test/examples/sha256_erlang_nif/c_src/sha-2/.gitignore",
+     "erts/preloaded/.gitignore",
+     "erts/preloaded/src/.gitignore",
+     "lib/.gitignore",
+     "lib/asn1/src/.gitignore",
+     "lib/common_test/test_server/.gitignore",
+     "lib/compiler/scripts/.gitignore",
+     "lib/compiler/src/.gitignore",
+     "lib/compiler/test/core_SUITE_data/.gitignore",
+     "lib/dialyzer/doc/.gitignore",
+     "lib/dialyzer/test/incremental_SUITE_data/extra_modules/ebin/.gitignore",
 
-%% filter_erlang(License, Copyrights, Vs) ->
-%%     Vs1 = lists:filter(fun erlang_filtering/1, Vs),
-%%     add_license(License, Copyrights, Vs1).
+     "lib/dialyzer/test/options1_SUITE_data/my_include/CVS/Entries",
+     "lib/dialyzer/test/options1_SUITE_data/my_include/CVS/Repository",
+     "lib/dialyzer/test/options1_SUITE_data/my_include/CVS/Root",
 
-%% filter_md(License, Copyrights, Vs) ->
-%%     Vs1 = lists:filter(fun md_filtering/1, Vs),
-%%     add_license(License, Copyrights, Vs1).
-
-
-%% %% Vs :: [string()]
-%% filter_c(License, Copyrights, Vs) ->
-%%     Vs1 = lists:filter(fun c_filtering/1, Vs),
-%%     add_license(License, Copyrights, Vs1).
-
-%% %%
-%% %% Filtering functions
-%% %%
-%% c_filtering(X) ->
-%%     case lists:reverse(X) of
-%%         "c."++_ ->
-%%             true;
-%%         "ppc."++_ ->
-%%             true;
-%%         "h."++_ ->
-%%             true;
-%%         "pph."++_ ->
-%%             true;
-%%         _ ->
-%%             false
-%%     end.
-
-%% md_filtering(X) ->
-%%     case lists:reverse(X) of
-%%         "dm."++_ ->
-%%             true;
-%%         _ ->
-%%             false
-%%     end.
-
-%% erlang_filtering(X) ->
-%%   %% when X =/= "erts/test/erlc_SUITE_data/src/😀/erl_test_unicode.erl" orelse
-%%   %%      X =/= "erts/test/erlc_SUITE_data/src/ð/erl_test_unicode.erl" orelse
-%%   %%      X =/= "lib/ssh/src/ssh.erl" ->
-%%     case lists:reverse(X) of
-%%         "lre."++_ ->
-%%             true;
-%%         "lrh."++_ ->
-%%             true;
-%%         "tpircse."++_ ->
-%%             true;
-%%         "lrx."++_ ->
-%%             true;
-%%         "lry."++_ ->
-%%             true;
-%%         _ ->
-%%             false
-%%     end.
-
-%% -spec add_license(License :: string(), Copyrights :: #{string() => string()}, LL :: [File]) -> ok
-%%               when File :: string().
-%% add_license(License, Copyrights, LL) ->
-%%     ok = c:cd("otp"),
-%%     Defaults = #{"erts/emulator/beam/erl_db_hash.c" => "Copyright Ericsson AB 1998-2024"},
-%%     lists:foreach(fun (File) ->
-%%                           try
-%%                               %% _ = io:format("File: ~p --> ~p~n", [BinFile, Defaults]),
-%%                               Default = maps:get(File, Defaults, error),
-%%                               %% _ = io:format("File: ~p --> ~p~n", [File, maps:get(File, Copyrights, Default)]),
-%%                               maps:get(File, Copyrights, Default)
-%%                           of
-%%                               Cpr ->
-%%                                   Command = "reuse annotate --no-replace --license \""++ License ++
-%%                                       "\" --copyright \"" ++ Cpr ++ "\" " ++ File,
-%%                                   %% use line below if you want to skip files that already contains reuse licenses
-%%                                   %% "\" --copyright \"" ++ Cpr ++ "\" --skip-existing " ++ File,
-%%                                   Command1 = Command ++ " && dos2unix " ++ File,
-%%                                   %% io:format("~p~n", [Command1]),
-%%                                   Result = os:cmd(Command1),
-%%                                   io:format("~s~n", [erlang:list_to_binary(Result)])
-%%                         catch
-%%                             _:_ ->
-%%                                 io:format("[NoCopyright]~p~n", [File])
-%%                         end
-%%                   end, LL).
-
-%% -spec generate_toml(Files :: [string()]) -> ok.
-%% generate_toml(Files) ->
-%%     UnmodifiableFiles = lists:filter(fun(File) ->
-%%                                              not c_filtering(File) orelse not md_filtering(File) orelse not erlang_filtering(File)
-%%                                      end, [], Files).
-%% I need to map again copyright and license to these files, so something similar to the add_license but that writes to a TOML file
-%% TODO we need to generate a TOML file with the files that we do not add a license.
+     "lib/diameter/.gitignore",
+     "lib/diameter/doc/.gitignore",
+     "lib/diameter/doc/src/.gitignore",
+     "lib/diameter/ebin/.gitignore",
+     "lib/diameter/examples/.gitignore",
+     "lib/diameter/examples/dict/.gitignore",
+     "lib/diameter/src/.gitignore",
+     "lib/diameter/src/gen/.gitignore",
+     "lib/diameter/test/.gitignore",
+     "lib/edoc/.gitignore",
+     "lib/edoc/doc/assets/.gitignore",
+     "lib/edoc/doc/chunks/.gitignore",
+     "lib/eldap/.gitignore",
+     "lib/eunit/doc/.gitignore",
+     "lib/inets/priv/plt/.gitignore",
+     "lib/jinterface/.gitignore",
+     "lib/jinterface/doc/assets/.gitignore",
+     "lib/jinterface/test/jinterface_SUITE_data/.gitignore",
+     "lib/jinterface/test/nc_SUITE_data/.gitignore",
+     "lib/kernel/doc/src/.gitignore",
+     "lib/kernel/test/interactive_shell_SUITE_data/.gitignore",
+     "lib/megaco/.gitignore",
+     "lib/megaco/doc/specs/.gitignore",
+     "lib/megaco/priv/plt/.gitignore",
+     "lib/mnesia/test/.gitignore",
+     "lib/odbc/doc/specs/.gitignore",
+     "lib/public_key/.gitignore",
+     "lib/sasl/test/.gitignore",
+     "lib/sasl/test/release_handler_SUITE_data/relocatable_release/hello_server/ebin/.gitignore",
+     "lib/sasl/test/release_handler_SUITE_data/relocatable_release/hello_server_new/ebin/.gitignore",
+     "lib/snmp/.gitignore",
+     "lib/snmp/doc/specs/.gitignore",
+     "lib/snmp/include/.gitignore",
+     "lib/snmp/priv/mibs/.gitignore",
+     "lib/snmp/priv/plt/.gitignore",
+     "lib/snmp/test/snmp_test_data/.gitignore",
+     "lib/snmp/test/test_config/.gitignore",
+     "lib/ssh/src/.gitignore",
+     "lib/ssh/test/.gitignore",
+     "lib/ssl/src/.gitignore",
+     "lib/syntax_tools/doc/assets/.gitignore",
+     "lib/wx/.gitignore",
+     "scan-result.json",
+     "system/doc/.gitignore",
+     "system/doc/assets/.gitignore",
+     "system/doc/general_info/.gitignore",
+     "system/doc/installation_guide/.gitignore",
+     "system/doc/top/.gitignore"].
