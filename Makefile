@@ -17,9 +17,16 @@ docker-build:
             --file "Dockerfile" \
             . \
 			--network=host
-	# docker run sbom "make "
-	# docker pull eclipse-temurin:21-jdk-alpine
-	# docker run -it -v $PWD/:/github --network host eclipse-temurin:21-jre-alpine /bin/sh
+
+# Run outside Docker
+fix-sbom:
+	./otp_compliance.escript sbom otp-info --sbom-file /github/otp/bom.spdx.json --input-file /github/otp/scan-result.json
+	cp /github/otp/bom.spdx.json . # Patched source SBOM
+
+#
+# Run Docker commands
+#
+docker-all: docker-analyze docker-scan docker-report
 
 docker-analyze:
 	docker run -v $PWD/:/github --network host sbom "cd /github && make analyze"
@@ -31,14 +38,10 @@ docker-report:
 	docker run -v $PWD/:/github --network host sbom "cd /github && make report"
 
 
-# TODO: add flags for config.yml and other files:
-# - evaluator: license_classifications.yml
-#
 # Commands to run inside the docker container
 analyze:
 	cd ort && \
 	./gradlew cli:run --args="-c /github/config.yml analyze -i /github/otp -o . -f JSON --repository-configuration-file=/github/.ort.yml"
-    # ./gradlew cli:run --args="analyze -i $PWD/../otp -o . -f JSON --repository-configuration-file=$PWD/.ort.yml"
 
 scan:
 	cd ort && \
@@ -46,12 +49,9 @@ scan:
 
 report:
 	cd ort && \
-	./gradlew cli:run --args="report -i /github/otp/scan-result.json -o $PWD/../otp -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON" && \
-	./gradlew cli:run --args="report -i /github/otp/scan-result.json -o $PWD/../otp -f PlainTextTemplate -O PlainTextTemplate=template.path=$PWD/../otp-sbom/COPYRIGHT.md.ftl"
-
-fix-sbom:
-	./otp_compliance.escript sbom otp-info --sbom-file bom.spdx.json --input-file scan-result.json
+	./gradlew cli:run --args="report -i /github/otp/scan-result.json -o /github/otp -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON" && \
+	./gradlew cli:run --args="report -i /github/otp/scan-result.json -o /github/otp -f PlainTextTemplate -O PlainTextTemplate=template.path=/github/COPYRIGHT.md.ftl"
 
 
-all: install
+all: install docker-all fix-sbom
 # end
