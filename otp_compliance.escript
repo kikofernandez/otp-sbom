@@ -359,7 +359,7 @@ reuse(#{input_file := Input, base_file := ScanResultFile}) ->
     %% reuse:main(Input, classify_copyright_result(ScanResultFile)).
     CopyrightInfo = classify_copyright_result(ScanResultFile),
     CopyrightInfo1 = maps:fold(fun(K, V, Acc) ->
-                                       Acc#{erlang:binary_to_list(K) => erlang:binary_to_list(V)}
+                                    Acc#{erlang:binary_to_list(K) => erlang:binary_to_list(V)}
                                end, #{}, CopyrightInfo),
     {ok, Bin} = file:read_file(Input),
     Json = json:decode(Bin),

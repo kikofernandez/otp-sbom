@@ -1,8 +1,5 @@
 # FROM eclipse-temurin:21-jdk-alpine
 FROM ubuntu:22.04
-# docker run -it -v $PWD/:/github --network host --build-arg UID=$(id -u) --build-arg GID=$(id -g) eclipse-temurin:21-jdk-alpine /bin/sh
-
-USER root
 
 # Install build tools
 RUN apt-get update && apt-get -y upgrade
