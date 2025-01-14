@@ -112,16 +112,26 @@ cli() ->
                                                 base_file(?default_classified_result),
                                                 output_option() ],
                                  handler => fun classify_path_license_copyright/1},
-                          "reuse" =>
-                                #{ help =>
-                                       """
-                                       Calls reuse tool. BaseFile expects a scan-result.json file.
+                          %% "reuse" =>
+                          %%       #{ help =>
+                          %%              """
+                          %%              Calls reuse tool. BaseFile expects a scan-result.json file.
+                          %%              Adds annotations to Erlang, C, and markdown files.
 
-                                       """,
-                                   arguments => [input_option(?default_classified_result),
-                                                base_file() % scan-result.json
-                                               ],
-                                   handler => fun reuse/1},
+                          %%              """,
+                          %%          arguments => [input_option(?default_classified_result),
+                          %%                       base_file() % scan-result.json
+                          %%                      ],
+                          %%          handler => fun reuse/1},
+                          "reuse-gen-toml" =>
+                              #{ help =>
+                                     """
+                                     Generates a TOML file based on the 'classify-license-copyright' results.
+                                     Files with no license are given LicenseRef-UnknownLicense.txt.
+
+                                     """,
+                                   arguments => [input_option()],
+                                   handler => fun reuse_gen_toml/1},
                           "diff" =>
                               #{ help =>
                                      """
@@ -355,24 +365,49 @@ classify_copyright_result(Filename) ->
                     end, #{}, Copyrights).
 
 
-reuse(#{input_file := Input, base_file := ScanResultFile}) ->
-    %% reuse:main(Input, classify_copyright_result(ScanResultFile)).
-    CopyrightInfo = classify_copyright_result(ScanResultFile),
-    CopyrightInfo1 = maps:fold(fun(K, V, Acc) ->
-                                    Acc#{erlang:binary_to_list(K) => erlang:binary_to_list(V)}
-                               end, #{}, CopyrightInfo),
-    {ok, Bin} = file:read_file(Input),
-    Json = json:decode(Bin),
-    _ = maps:foreach(fun (License, ListOfBin) when License =/= ~"NONE" ->
-                             Files = lists:map(fun erlang:binary_to_list/1, ListOfBin),
-                             %% filter_erlang(erlang:binary_to_list(License), Files);
-                             %% filter_md(erlang:binary_to_list(License), Files);
-                             filter_c(erlang:binary_to_list(License), CopyrightInfo1, Files);
-                         (~"NONE", _) ->
-                             io:format("~s~n", [~"NONE"]),
-                             skip
-                     end, Json),
-    generate_toml(maps:keys(CopyrightInfo1)).
+%% reuse(#{input_file := Input, base_file := ScanResultFile}) ->
+%%     %% reuse:main(Input, classify_copyright_result(ScanResultFile)).
+%%     CopyrightInfo = classify_copyright_result(ScanResultFile),
+%%     CopyrightInfo1 = maps:fold(fun(K, V, Acc) ->
+%%                                     Acc#{erlang:binary_to_list(K) => erlang:binary_to_list(V)}
+%%                                end, #{}, CopyrightInfo),
+%%     {ok, Bin} = file:read_file(Input),
+%%     Json = json:decode(Bin),
+%%     _ = maps:foreach(fun (License, ListOfBin) when License =/= ~"NONE" ->
+%%                              Files = lists:map(fun erlang:binary_to_list/1, ListOfBin),
+%%                              %% filter_erlang(erlang:binary_to_list(License), Files);
+%%                              %% filter_md(erlang:binary_to_list(License), Files);
+%%                              filter_c(erlang:binary_to_list(License), CopyrightInfo1, Files);
+%%                          (~"NONE", _) ->
+%%                              io:format("~s~n", [~"NONE"]),
+%%                              skip
+%%                      end, Json).
+    %% generate_toml(maps:keys(CopyrightInfo1)).
+
+reuse_gen_toml(#{input_file := Input}) ->
+    Json = decode(Input),
+    Result = maps:fold(fun(Path, #{~"Copyright" := C, ~"License" := L}, Acc) ->
+                               LicenseString = case L of
+                                                   ~"NONE" ->
+                                                       "LicenseRef-erlang-contributors";
+                                                   ~"NOASSERTION" ->
+                                                       "LicenseRef-erlang-contributors";
+                                                   _ ->
+                                                       L
+                                               end,
+                               CopyrightString = case C of
+                                                     ~"NONE" ->
+                                                         "Erlang/OTP contributors";
+                                                     _ ->
+                                                         C
+                                                 end,
+                               LicenseId = io_lib:format("SPDX-License-Identifier = \"~s\"\n", [LicenseString]),
+                               CopyrightId = io_lib:format("SPDX-FileCopyrightText = \"~s\"\n", [CopyrightString]),
+                               io_lib:format("[[annotations]]\npath = \"~s\"\n~s~s\n",
+                                             [Path, LicenseId, CopyrightId]) ++ Acc
+                       end, "", Json),
+    TOML = "version = 1\n~n" ++ Result,
+    io:format(TOML).
 
 
 group_by_licenses(#{input_file := Filename,
@@ -581,95 +616,95 @@ curated_path_license(Name, Path, [_Cur | Curations]) ->
 %% ReUse Functions
 %%
 
-filter_erlang(License, Copyrights, Vs) ->
-    Vs1 = lists:filter(fun erlang_filtering/1, Vs),
-    add_license(License, Copyrights, Vs1).
+%% filter_erlang(License, Copyrights, Vs) ->
+%%     Vs1 = lists:filter(fun erlang_filtering/1, Vs),
+%%     add_license(License, Copyrights, Vs1).
 
-filter_md(License, Copyrights, Vs) ->
-    Vs1 = lists:filter(fun md_filtering/1, Vs),
-    add_license(License, Copyrights, Vs1).
+%% filter_md(License, Copyrights, Vs) ->
+%%     Vs1 = lists:filter(fun md_filtering/1, Vs),
+%%     add_license(License, Copyrights, Vs1).
 
 
-%% Vs :: [string()]
-filter_c(License, Copyrights, Vs) ->
-    Vs1 = lists:filter(fun c_filtering/1, Vs),
-    add_license(License, Copyrights, Vs1).
+%% %% Vs :: [string()]
+%% filter_c(License, Copyrights, Vs) ->
+%%     Vs1 = lists:filter(fun c_filtering/1, Vs),
+%%     add_license(License, Copyrights, Vs1).
 
-%%
-%% Filtering functions
-%%
-c_filtering(X) ->
-    case lists:reverse(X) of
-        "c."++_ ->
-            true;
-        "ppc."++_ ->
-            true;
-        "h."++_ ->
-            true;
-        "pph."++_ ->
-            true;
-        _ ->
-            false
-    end.
+%% %%
+%% %% Filtering functions
+%% %%
+%% c_filtering(X) ->
+%%     case lists:reverse(X) of
+%%         "c."++_ ->
+%%             true;
+%%         "ppc."++_ ->
+%%             true;
+%%         "h."++_ ->
+%%             true;
+%%         "pph."++_ ->
+%%             true;
+%%         _ ->
+%%             false
+%%     end.
 
-md_filtering(X) ->
-    case lists:reverse(X) of
-        "dm."++_ ->
-            true;
-        _ ->
-            false
-    end.
+%% md_filtering(X) ->
+%%     case lists:reverse(X) of
+%%         "dm."++_ ->
+%%             true;
+%%         _ ->
+%%             false
+%%     end.
 
-erlang_filtering(X) ->
-  %% when X =/= "erts/test/erlc_SUITE_data/src/😀/erl_test_unicode.erl" orelse
-  %%      X =/= "erts/test/erlc_SUITE_data/src/ð/erl_test_unicode.erl" orelse
-  %%      X =/= "lib/ssh/src/ssh.erl" ->
-    case lists:reverse(X) of
-        "lre."++_ ->
-            true;
-        "lrh."++_ ->
-            true;
-        "tpircse."++_ ->
-            true;
-        "lrx."++_ ->
-            true;
-        "lry."++_ ->
-            true;
-        _ ->
-            false
-    end.
+%% erlang_filtering(X) ->
+%%   %% when X =/= "erts/test/erlc_SUITE_data/src/😀/erl_test_unicode.erl" orelse
+%%   %%      X =/= "erts/test/erlc_SUITE_data/src/ð/erl_test_unicode.erl" orelse
+%%   %%      X =/= "lib/ssh/src/ssh.erl" ->
+%%     case lists:reverse(X) of
+%%         "lre."++_ ->
+%%             true;
+%%         "lrh."++_ ->
+%%             true;
+%%         "tpircse."++_ ->
+%%             true;
+%%         "lrx."++_ ->
+%%             true;
+%%         "lry."++_ ->
+%%             true;
+%%         _ ->
+%%             false
+%%     end.
 
--spec add_license(License :: string(), Copyrights :: #{string() => string()}, LL :: [File]) -> ok
-              when File :: string().
-add_license(License, Copyrights, LL) ->
-    ok = c:cd("otp"),
-    Defaults = #{"erts/emulator/beam/erl_db_hash.c" => "Copyright Ericsson AB 1998-2024"},
-    lists:foreach(fun (File) ->
-                          try
-                              %% _ = io:format("File: ~p --> ~p~n", [BinFile, Defaults]),
-                              Default = maps:get(File, Defaults, error),
-                              %% _ = io:format("File: ~p --> ~p~n", [File, maps:get(File, Copyrights, Default)]),
-                              maps:get(File, Copyrights, Default)
-                          of
-                              Cpr ->
-                                  Command = "reuse annotate --no-replace --license \""++ License ++
-                                      "\" --copyright \"" ++ Cpr ++ "\" " ++ File,
-                                  %% use line below if you want to skip files that already contains reuse licenses
-                                  %% "\" --copyright \"" ++ Cpr ++ "\" --skip-existing " ++ File,
-                                  Command1 = Command ++ " && dos2unix " ++ File,
-                                  %% io:format("~p~n", [Command1]),
-                                  Result = os:cmd(Command1),
-                                  io:format("~s~n", [erlang:list_to_binary(Result)])
-                        catch
-                            _:_ ->
-                                io:format("[NoCopyright]~p~n", [File])
-                        end
-                  end, LL).
+%% -spec add_license(License :: string(), Copyrights :: #{string() => string()}, LL :: [File]) -> ok
+%%               when File :: string().
+%% add_license(License, Copyrights, LL) ->
+%%     ok = c:cd("otp"),
+%%     Defaults = #{"erts/emulator/beam/erl_db_hash.c" => "Copyright Ericsson AB 1998-2024"},
+%%     lists:foreach(fun (File) ->
+%%                           try
+%%                               %% _ = io:format("File: ~p --> ~p~n", [BinFile, Defaults]),
+%%                               Default = maps:get(File, Defaults, error),
+%%                               %% _ = io:format("File: ~p --> ~p~n", [File, maps:get(File, Copyrights, Default)]),
+%%                               maps:get(File, Copyrights, Default)
+%%                           of
+%%                               Cpr ->
+%%                                   Command = "reuse annotate --no-replace --license \""++ License ++
+%%                                       "\" --copyright \"" ++ Cpr ++ "\" " ++ File,
+%%                                   %% use line below if you want to skip files that already contains reuse licenses
+%%                                   %% "\" --copyright \"" ++ Cpr ++ "\" --skip-existing " ++ File,
+%%                                   Command1 = Command ++ " && dos2unix " ++ File,
+%%                                   %% io:format("~p~n", [Command1]),
+%%                                   Result = os:cmd(Command1),
+%%                                   io:format("~s~n", [erlang:list_to_binary(Result)])
+%%                         catch
+%%                             _:_ ->
+%%                                 io:format("[NoCopyright]~p~n", [File])
+%%                         end
+%%                   end, LL).
 
--spec generate_toml(Files :: [string()]) -> ok.
-generate_toml(Files) ->
-    UnmodifiableFiles = lists:filter(fun(File) ->
-                                             not c_filtering(File) orelse not md_filtering(File) orelse not erlang_filtering(File)
-                                     end, [], Files).
+%% -spec generate_toml(Files :: [string()]) -> ok.
+%% generate_toml(Files) ->
+%%     UnmodifiableFiles = lists:filter(fun(File) ->
+%%                                              not c_filtering(File) orelse not md_filtering(File) orelse not erlang_filtering(File)
+%%                                      end, [], Files).
 %% I need to map again copyright and license to these files, so something similar to the add_license but that writes to a TOML file
 %% TODO we need to generate a TOML file with the files that we do not add a license.
