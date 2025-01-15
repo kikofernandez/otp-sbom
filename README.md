@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 Erlang/OTP and its contributors
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # SBOM Creation
 
 To create a SBOM, the following are prerequisites

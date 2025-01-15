@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Erlang/OTP and its contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # FROM eclipse-temurin:21-jdk-alpine
 FROM ubuntu:22.04
 

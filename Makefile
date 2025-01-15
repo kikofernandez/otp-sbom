@@ -1,8 +1,13 @@
+# SPDX-FileCopyrightText: 2025 Erlang/OTP and its contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
 ##
 # Project Title
 #
 # @file
 # @version 0.1
+
 
 all: sbom
 clean:
