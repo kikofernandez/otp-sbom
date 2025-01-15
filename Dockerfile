@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# FROM eclipse-temurin:21-jdk-alpine
 FROM ubuntu:22.04
 
 # Install build tools

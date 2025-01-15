@@ -41,10 +41,11 @@ sbom:
 	make fix-sbom
 
 docker-run:
-	docker run --rm -v $(PWD):/github \
-               --network host -u $(id -u ${USER}):$(id -g ${USER}) \
+	docker run --rm -u $(shell id -u):$(shell id -g) \
+               -v $(PWD):/github \
+               --network host  \
                -w /github \
-               sbom /bin/sh -c "make analyze && make scan && make report"
+               sbom /bin/sh -c "export GRADLE_USER_HOME=/github/ && make analyze && make scan && make report"
 
 # Commands to run inside the docker container
 analyze:
