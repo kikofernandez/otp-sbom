@@ -45,7 +45,11 @@ docker-run:
                -v $(PWD):/github \
                --network host  \
                -w /github \
-               sbom /bin/sh -c "export GRADLE_USER_HOME=/github/ && make analyze && make scan && make report"
+               sbom /bin/sh -c "export GRADLE_USER_HOME=/github/.gradle && \
+                                export HOME=/github && \
+                                export ORT_CONFIG_DIR=/github/.ort/config && \
+                                export ORT_DATA_DIR=/github/.ort && \
+                                make analyze && make scan && make report"
 
 # Commands to run inside the docker container
 analyze:
