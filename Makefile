@@ -73,7 +73,7 @@ test-install:
     # echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list && \
     # sudo -E apt-get update && \
     # sudo -E apt-get install -y temurin-21-jdk
-	sudo -E apt-get install build-essential git python3 python3-pip yarn nodejs
+	sudo -E apt-get install -y build-essential git python3 python3-pip yarn nodejs
 
 	pip install --upgrade pip setuptools wheel && pip install scancode-toolkit
 
