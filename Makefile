@@ -70,7 +70,7 @@ test-install:
 	sudo -E apt-get install -y wget apt-transport-https gnupg build-essential git python3 python3-pip yarn nodejs
 	export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1 && \
 	wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo -E apt-key add - && \
-	echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list
+	echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
 	sudo -E apt-get update
 	sudo -E apt-get install -y temurin-21-jdk
 
