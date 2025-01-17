@@ -41,8 +41,11 @@ is that we need to create our own `LicenseRef-NONE` to write the
 `NONE` license (unknown) to all unknown files.
 
 ``` shell
+cp otp/scan-result.json .
+./otp_compliance.escript explore classify-license
 ./otp_compliance.escript explore classify-license-copyright --output-file license_copyright.txt
-./otp_compliance.escript explore reuse-gen-toml --input-file license_copyright.txt
+../otp_compliance.escript explore reuse-gen-toml --input-file license_copyright.txt > otp/REUSE.toml
+cd otp
 reuse download --all
 reuse lint
 ```
