@@ -80,13 +80,14 @@ test-install:
 	# ENV LC_ALL en_US.UTF-8
 
 test: ort
+	export CWD=${PWD} && \
 	export GRADLE_USER_HOME=.gradle && \
-    export HOME=. && \
-    export ORT_CONFIG_DIR=.ort/config && \
-    export ORT_DATA_DIR=.ort && \
+	export HOME=${CWD} && \
+	export ORT_CONFIG_DIR=${CWD}/.ort/config && \
+	export ORT_DATA_DIR=${CWD}/.ort
 	cd ort && \
-	./gradlew cli:run --args="-c config.yml analyze -i $(ERL_TOP) -o . -f JSON --repository-configuration-file=.ort.yml" && \
-	./gradlew cli:run --args="-c config.yml scan -o $(ERL_TOP) -f JSON -i ./cli/analyzer-result.json" && \
-	./gradlew cli:run --args="report -i $(ERL_TOP)/scan-result.json -o $(ERL_TOP) -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
+	./gradlew cli:run --args="-c ${CWD}/config.yml analyze -i ${ERL_TOP} -o . -f JSON --repository-configuration-file=${CWD}/.ort.yml" && \
+	./gradlew cli:run --args="-c ${CWD}/config.yml scan -o ${ERL_TOP} -f JSON -i ${CWD}/ort/cli/analyzer-result.json" && \
+	./gradlew cli:run --args="report -i ${ERL_TOP}/scan-result.json -o ${ERL_TOP} -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
 
 # end
