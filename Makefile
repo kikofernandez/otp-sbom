@@ -89,7 +89,7 @@ test: ort
 	export ORT_CONFIG_DIR=${CWD}/.ort/config && \
 	export ORT_DATA_DIR=${CWD}/.ort && \
 	export PATH=/home/otptest/.local/bin:${PATH}
-	echo ${http_proxy} | rev | cu -d: -f2-3 | rev
+	echo ${http_proxy} | rev | cut -d: -f2-3 | rev
 	echo ${http_proxy} | cut -d: -f3
 	cd ort && \
 	./gradlew cli:run -Dhttp.proxyHost=`echo ${http_proxy} | rev | cut -d: -f2-3 | rev` -Dhttp.proxyPort=`echo ${http_proxy} | cut -d: -f3` \
