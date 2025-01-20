@@ -85,7 +85,8 @@ test: ort
 	export GRADLE_USER_HOME=.gradle && \
 	export HOME=${CWD} && \
 	export ORT_CONFIG_DIR=${CWD}/.ort/config && \
-	export ORT_DATA_DIR=${CWD}/.ort
+	export ORT_DATA_DIR=${CWD}/.ort && \
+	export PATH=/home/otptest/.local/bin:${PATH}
 	cd ort && \
 	./gradlew cli:run --args="-c ${CWD}/config.yml analyze -i ${ERL_TOP} -o . -f JSON --repository-configuration-file=${CWD}/.ort.yml" && \
 	./gradlew cli:run --args="-c ${CWD}/config.yml scan -o ${ERL_TOP} -f JSON -i ${CWD}/ort/cli/analyzer-result.json" && \
