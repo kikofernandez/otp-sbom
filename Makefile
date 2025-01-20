@@ -90,8 +90,8 @@ test: ort
 	export ORT_DATA_DIR=${CWD}/.ort && \
 	export PATH=/home/otptest/.local/bin:${PATH}
 	cd ort && \
-	./gradlew cli:run --args="-c ${CWD}/config.yml analyze -i ${ERL_TOP} -o . -f JSON --repository-configuration-file=${CWD}/.ort.yml" && \
-	./gradlew cli:run --args="-c ${CWD}/config.yml scan -o ${ERL_TOP} -f JSON -i ${CWD}/ort/cli/analyzer-result.json" && \
-	./gradlew cli:run --args="report -i ${ERL_TOP}/scan-result.json -o ${ERL_TOP} -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
+	./gradlew cli:run -Dhttp.proxyHost=${http_proxy} -Dhttps.proxyHost=${https_proxy} --args="-c ${CWD}/config.yml analyze -i ${ERL_TOP} -o . -f JSON --repository-configuration-file=${CWD}/.ort.yml" && \
+	./gradlew cli:run -Dhttp.proxyHost=${http_proxy} -Dhttps.proxyHost=${https_proxy} --args="-c ${CWD}/config.yml scan -o ${ERL_TOP} -f JSON -i ${CWD}/ort/cli/analyzer-result.json" && \
+	./gradlew cli:run -Dhttp.proxyHost=${http_proxy} -Dhttps.proxyHost=${https_proxy} --args="report -i ${ERL_TOP}/scan-result.json -o ${ERL_TOP} -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
 
 # end
