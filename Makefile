@@ -75,7 +75,7 @@ test-install:
 	sudo -E apt-get update
 	sudo -E apt-get install -y temurin-21-jdk
 
-	pip install --upgrade pip setuptools wheel && pip install scancode-toolkit
+	pip install --proxy ${HTTPS} --upgrade pip setuptools wheel && pip install --proxy ${HTTPS} scancode-toolkit
 	sudo -E apt-get install locales && sed -i 's@# en_US.UTF-8@en_US.UTF-8@g' /etc/locale.gen && locale-gen && \
 	update-locale LANG=en_US.UTF-8
 	# ENV LC_ALL en_US.UTF-8
