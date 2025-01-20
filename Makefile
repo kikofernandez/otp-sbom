@@ -78,8 +78,8 @@ test-install:
 	# pip install --proxy ${https_proxy} --upgrade pip setuptools wheel
 	pip install setuptools wheel
 	pip install --proxy ${https_proxy} scancode-toolkit
-	sudo -E apt-get install locales && sed -i 's@# en_US.UTF-8@en_US.UTF-8@g' /etc/locale.gen && locale-gen && \
-	update-locale LANG=en_US.UTF-8
+	sudo -E apt-get install locales && sudo sed -i 's@# en_US.UTF-8@en_US.UTF-8@g' /etc/locale.gen && locale-gen && \
+	sudo update-locale LANG=en_US.UTF-8
 	# ENV LC_ALL en_US.UTF-8
 
 test: ort
