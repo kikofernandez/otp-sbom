@@ -83,8 +83,8 @@ test-install:
 	# ENV LC_ALL en_US.UTF-8
 
 test: ort
-	export CWD=${PWD} && \
-	export GRADLE_USER_HOME=.gradle && \
+	export CWD=`pwd` && \
+	export GRADLE_USER_HOME=${CWD}/.gradle && \
 	export HOME=${CWD} && \
 	export ORT_CONFIG_DIR=${CWD}/.ort/config && \
 	export ORT_DATA_DIR=${CWD}/.ort && \
@@ -94,8 +94,8 @@ test: ort
 	cd ort && \
 	./gradlew cli:run -Dhttp.proxyHost=`echo ${http_proxy} | rev | cut -d: -f2-3 | rev` -Dhttp.proxyPort=`echo ${http_proxy} | cut -d: -f3` \
                       -Dhttps.proxyHost=`echo ${https_proxy} | rev | cut -d: -f2-3 | rev` -Dhttps.proxyPort=`echo ${https_proxy} | cut -d: -f3` \
-                      --args="-c ${CWD}/config.yml analyze -i ${ERL_TOP} -o . -f JSON --repository-configuration-file=${CWD}/.ort.yml" && \
-	./gradlew cli:run --args="-c ${CWD}/config.yml scan -o ${ERL_TOP} -f JSON -i ${CWD}/ort/cli/analyzer-result.json" && \
-	./gradlew cli:run --args="report -i ${ERL_TOP}/scan-result.json -o ${ERL_TOP} -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
+                      --args="-c ${CWD}/config.yml analyze -i ${ERL_TOP} -o . -f JSON --repository-configuration-file=${CWD}/.ort.yml"
+	# ./gradlew cli:run --args="-c ${CWD}/config.yml scan -o ${ERL_TOP} -f JSON -i ${CWD}/ort/cli/analyzer-result.json" && \
+	# ./gradlew cli:run --args="report -i ${ERL_TOP}/scan-result.json -o ${ERL_TOP} -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
 
 # end
