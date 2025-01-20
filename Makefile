@@ -67,7 +67,7 @@ report:
 
 test-install:
 	sudo apt-get update && sudo apt-get -y upgrade
-	sudo -E apt-get install -y wget apt-transport-https gnupg build-essential git python3 python3-pip yarn nodejs
+	sudo -E apt-get install -y wget apt-transport-https gnupg build-essential git python3 python3-pip yarn nodejs python3-testresources
 	export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1 && \
 	wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo -E apt-key add -
 	# echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | sudo -E tee /etc/apt/sources.list.d/adoptium.list
