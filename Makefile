@@ -89,14 +89,12 @@ test: ort
 	export ORT_CONFIG_DIR=${CWD}/.ort/config && \
 	export ORT_DATA_DIR=${CWD}/.ort && \
 	export PATH=/home/otptest/.local/bin:${PATH}
-	echo ${http_proxy} | rev | cut -d: -f2-3 | rev
-	echo ${http_proxy} | cut -d: -f3
-	cat > ${CWD}/.gradle/gradle.properties <<EOF
-	systemProp.https.proxyHost=`echo ${https_proxy} | rev | cut -d: -f2-3 | rev`
-	systemProp.https.proxyPort=`echo ${https_proxy} | cut -d: -f3`
-	systemProp.http.proxyHost=`echo ${http_proxy} | rev | cut -d: -f2-3 | rev`
-	systemProp.http.proxyPort=`echo ${http_proxy} | cut -d: -f3`
-	EOF
+	proxy=`echo "$${https_proxy}" | rev | cut -d: -f2-3 | rev` && \
+	port=`echo $${https_proxy} | cut -d: -f3` && \
+	echo "systemProp.https.proxyHost=$${proxy}" >> ${CWD}/.gradle/gradle.properties && \
+	echo "systemProp.https.proxyPort=$${port}"  >> ${CWD}/.gradle/gradle.properties && \
+	echo "systemProp.http.proxyHost=$${proxy}" >> ${CWD}/.gradle/gradle.properties && \
+	echo "systemProp.http.proxyPort=$${port}"  >> ${CWD}/.gradle/gradle.properties
 	cat ${CWD}/.gradle/gradle.properties
 	cd ort && \
 	./gradlew cli:run -Dhttp.proxyHost=`echo ${http_proxy} | rev | cut -d: -f2-3 | rev` -Dhttp.proxyPort=`echo ${http_proxy} | cut -d: -f3` \
