@@ -62,8 +62,8 @@ scan:
 
 report:
 	cd ort && \
-	./gradlew cli:run --args="report -i /github/otp/scan-result.json -o /github/otp -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON" && \
-	./gradlew cli:run --args="report -i /github/otp/scan-result.json -o /github/otp -f PlainTextTemplate -O PlainTextTemplate=template.path=/github/COPYRIGHT.md.ftl"
+	./gradlew cli:run --args="report -i /github/otp/scan-result.json -o /github/otp -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
+	# ./gradlew cli:run --args="report -i /github/otp/scan-result.json -o /github/otp -f PlainTextTemplate -O PlainTextTemplate=template.path=/github/COPYRIGHT.md.ftl"
 
 test-install:
 	sudo apt-get update && sudo apt-get -y upgrade
@@ -97,9 +97,7 @@ test: ort
 	echo "systemProp.http.proxyHost=$${proxy}" >> $${CWD}/.gradle/gradle.properties && \
 	echo "systemProp.http.proxyPort=$${port}"  >> $${CWD}/.gradle/gradle.properties && \
 	cd ort && \
-	./gradlew cli:run -Dhttp.proxyHost=$${proxy} -Dhttp.proxyPort=$${port} \
-                      -Dhttps.proxyHost=$${proxy} -Dhttps.proxyPort=$${port} \
-                      --args="-c $${CWD}/config.yml analyze -i ${ERL_TOP} -o . -f JSON --repository-configuration-file=$${CWD}/.ort.yml"
+	./gradlew cli:run --args="-c $${CWD}/config.yml analyze -i ${ERL_TOP} -o . -f JSON --repository-configuration-file=$${CWD}/.ort.yml"
 	# ./gradlew cli:run --args="-c ${CWD}/config.yml scan -o ${ERL_TOP} -f JSON -i ${CWD}/ort/cli/analyzer-result.json" && \
 	# ./gradlew cli:run --args="report -i ${ERL_TOP}/scan-result.json -o ${ERL_TOP} -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
 
