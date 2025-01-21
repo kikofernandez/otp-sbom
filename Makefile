@@ -96,7 +96,7 @@ test: ort
 	echo "systemProp.https.proxyPort=$${port}"  >> $${CWD}/.gradle/gradle.properties && \
 	echo "systemProp.http.proxyHost=$${proxy}" >> $${CWD}/.gradle/gradle.properties && \
 	echo "systemProp.http.proxyPort=$${port}"  >> $${CWD}/.gradle/gradle.properties
-	cat $${CWD}/.gradle/gradle.properties
+	cat .gradle/gradle.properties
 	cd ort && \
 	./gradlew cli:run -Dhttp.proxyHost=`echo ${http_proxy} | rev | cut -d: -f2-3 | rev` -Dhttp.proxyPort=`echo ${http_proxy} | cut -d: -f3` \
                       -Dhttps.proxyHost=`echo ${https_proxy} | rev | cut -d: -f2-3 | rev` -Dhttps.proxyPort=`echo ${https_proxy} | cut -d: -f3` \
