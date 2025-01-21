@@ -92,11 +92,11 @@ test: ort
 	echo ${http_proxy} | rev | cut -d: -f2-3 | rev
 	echo ${http_proxy} | cut -d: -f3
 	cat > ${CWD}/.gradle/gradle.properties <<EOF
-systemProp.https.proxyHost=`echo ${https_proxy} | rev | cut -d: -f2-3 | rev`
-systemProp.https.proxyPort=`echo ${https_proxy} | cut -d: -f3`
-systemProp.http.proxyHost=`echo ${http_proxy} | rev | cut -d: -f2-3 | rev`
-systemProp.http.proxyPort=`echo ${http_proxy} | cut -d: -f3`
-EOF
+	systemProp.https.proxyHost=`echo ${https_proxy} | rev | cut -d: -f2-3 | rev`
+	systemProp.https.proxyPort=`echo ${https_proxy} | cut -d: -f3`
+	systemProp.http.proxyHost=`echo ${http_proxy} | rev | cut -d: -f2-3 | rev`
+	systemProp.http.proxyPort=`echo ${http_proxy} | cut -d: -f3`
+	EOF
 	cat ${CWD}/.gradle/gradle.properties
 	cd ort && \
 	./gradlew cli:run -Dhttp.proxyHost=`echo ${http_proxy} | rev | cut -d: -f2-3 | rev` -Dhttp.proxyPort=`echo ${http_proxy} | cut -d: -f3` \
