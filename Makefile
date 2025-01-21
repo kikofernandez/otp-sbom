@@ -85,10 +85,10 @@ test-install:
 test: ort
 	mkdir -p .gradle
 	export CWD=`pwd` && \
-	export GRADLE_USER_HOME=${CWD}/.gradle && \
-	export HOME=${CWD} && \
-	export ORT_CONFIG_DIR=${CWD}/.ort/config && \
-	export ORT_DATA_DIR=${CWD}/.ort && \
+	export GRADLE_USER_HOME=$${CWD}/.gradle && \
+	export HOME=$${CWD} && \
+	export ORT_CONFIG_DIR=$${CWD}/.ort/config && \
+	export ORT_DATA_DIR=$${CWD}/.ort && \
 	export PATH=/home/otptest/.local/bin:${PATH} && \
 	proxy=`echo "$${https_proxy}" | rev | cut -d: -f2-3 | rev` && \
 	port=`echo $${https_proxy} | cut -d: -f3` && \
