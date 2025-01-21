@@ -83,6 +83,7 @@ test-install:
 	# ENV LC_ALL en_US.UTF-8
 
 test: ort
+	mkdir -p .gradle
 	export CWD=`pwd` && \
 	export GRADLE_USER_HOME=${CWD}/.gradle && \
 	export HOME=${CWD} && \
