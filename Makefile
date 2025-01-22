@@ -92,10 +92,10 @@ test: ort
 	export PATH=/home/otptest/.local/bin:${PATH} && \
 	proxy=`echo "$${https_proxy}" | rev | cut -d: -f2-3 | rev` && \
 	port=`echo $${https_proxy} | cut -d: -f3` && \
-	echo "systemProp.https.proxyHost=$${proxy}" >> $${CWD}/.gradle/gradle.properties && \
-	echo "systemProp.https.proxyPort=$${port}"  >> $${CWD}/.gradle/gradle.properties && \
-	echo "systemProp.http.proxyHost=$${proxy}" >> $${CWD}/.gradle/gradle.properties && \
-	echo "systemProp.http.proxyPort=$${port}"  >> $${CWD}/.gradle/gradle.properties && \
+	echo "systemProp.https.proxyHost=$${https_proxy}" >> $${CWD}/.gradle/gradle.properties && \
+	# echo "systemProp.https.proxyPort=$${port}"  >> $${CWD}/.gradle/gradle.properties &&
+	echo "systemProp.http.proxyHost=$${http_proxy}" >> $${CWD}/.gradle/gradle.properties && \
+	# echo "systemProp.http.proxyPort=$${port}"  >> $${CWD}/.gradle/gradle.properties &&
 	cd ort && \
 	./gradlew cli:run --args="-c $${CWD}/config.yml analyze -i ${ERL_TOP} -o . -f JSON --repository-configuration-file=$${CWD}/.ort.yml"
 	# ./gradlew cli:run --args="-c ${CWD}/config.yml scan -o ${ERL_TOP} -f JSON -i ${CWD}/ort/cli/analyzer-result.json" && \
