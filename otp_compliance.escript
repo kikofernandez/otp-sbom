@@ -294,16 +294,24 @@ fix_beam_licenses(LicensesAndCopyrights,
 
 %% fixes spdx license of beam files
 fix_beam_spdx_license(Path, {Licenses, Copyrights}, SPDX) ->
-    License = maps:get(Path, Licenses, ~"NONE"),
-    Copyright = maps:get(Path, Copyrights, ~"NONE"),
+    License = maps:get(Path, Licenses, ~"NOASSERTION"),
+    Copyright = maps:get(Path, Copyrights, ~"NOASSERTION"),
     SPDX#{ ~"copyrightText" := Copyright,
            ~"licenseConcluded" := License }.
 
+none_to_noassertion(~"NONE") ->
+    ~"NOASSERTION";
+none_to_noassertion(X) ->
+    X.
+
+
 %% fixes spdx license of non-beam files
-fix_spdx_license(#{~"licenseInfoInFiles" := [License]}=SPDX) ->
-    SPDX#{ ~"licenseConcluded" := License };
-fix_spdx_license(SPDX) ->
-    SPDX.
+fix_spdx_license(#{~"licenseInfoInFiles" := [License],
+                   ~"copyrightText" := C}=SPDX) ->
+    SPDX#{ ~"licenseConcluded" := none_to_noassertion(License),
+           ~"copyrightText" := none_to_noassertion(C)};
+fix_spdx_license(#{~"copyrightText" := C}=SPDX) ->
+    SPDX#{ ~"copyrightText" := none_to_noassertion(C)}.
 
 %% Given an input file, returns a mapping of
 %% #{filepath => license} for each file path towards its license.
