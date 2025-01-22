@@ -25,7 +25,7 @@ ort:
 
   scanner:
     skipConcluded: false
-    includeUnlicensed: true
+    includeFilesWithoutFindings: true
     config:
       # A map from scanner plugin types to the plugin configuration.
       ScanCode:
