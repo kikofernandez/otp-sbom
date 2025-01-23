@@ -90,7 +90,7 @@ test: ort
 	export ORT_CONFIG_DIR=$${CWD}/.ort/config && \
 	export ORT_DATA_DIR=$${CWD}/.ort && \
 	export PATH=/home/otptest/.local/bin:${PATH} && \
-	proxy=`echo "$${https_proxy}" | rev | cut -d: -f2-3 | rev` && \
+	proxy=`echo "$${https_proxy}" | rev | cut -d: -f2-3 | rev | cut -d"/" -f3` && \
 	port=`echo $${https_proxy} | cut -d: -f3` && \
 	export DEFAULT_JVM_OPTS="-Dhttp.proxyHost=$${proxy} -Dhttp.proxyPort=$${port} -Dhttps.proxyHost=$${proxy} -Dhttps.proxyPort=$${port}" && \
 	cd ort && \
