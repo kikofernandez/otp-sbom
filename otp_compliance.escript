@@ -296,8 +296,17 @@ fix_beam_licenses(LicensesAndCopyrights,
 fix_beam_spdx_license(Path, {Licenses, Copyrights}, SPDX) ->
     License = maps:get(Path, Licenses, ~"NOASSERTION"),
     Copyright = maps:get(Path, Copyrights, ~"NOASSERTION"),
-    SPDX#{ ~"copyrightText" := Copyright,
-           ~"licenseConcluded" := License }.
+    fix_spdx_license(SPDX#{ ~"copyrightText" := Copyright, ~"licenseConcluded" := License }).
+
+fix_beam_spdx_license(Path, File, LicensesAndCopyrights, SPDX) when is_binary(Path),
+                                                                    is_binary(File) ->
+    Spdx0 = fix_beam_spdx_license(<<Path/binary, File/binary, ".erl">>, LicensesAndCopyrights, SPDX),
+    case maps:get(~"licenseConcluded", Spdx0) of
+        ~"NOASSERTION" ->
+            fix_beam_spdx_license(<<Path/binary, File/binary, ".hrl">>, LicensesAndCopyrights, Spdx0);
+        _ ->
+            Spdx0
+    end.
 
 none_to_noassertion(~"NONE") ->
     ~"NOASSERTION";
