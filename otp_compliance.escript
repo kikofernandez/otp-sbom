@@ -265,20 +265,29 @@ fix_beam_licenses(LicensesAndCopyrights,
                          ~"licenseConcluded" := ~"Apache-2.0"},
     Files1= lists:map(
               fun (SPDX) ->
+                      %% Adds license and copyright from .erl or .hrl file to its .beam equivalent
                       try
                           case SPDX of
                               #{~"fileName" := <<"bootstrap/lib/compiler/ebin/", Filename/binary>>} ->
                                   [File, _] = binary:split(Filename, ~".beam"),
-                                  fix_beam_spdx_license(<<"lib/compiler/src/", File/binary, ".erl">>, LicensesAndCopyrights, SPDX);
+                                  fix_beam_spdx_license(<<"lib/compiler/src/">>, File, LicensesAndCopyrights, SPDX);
+
                               #{~"fileName" := <<"bootstrap/lib/kernel/ebin/",Filename/binary>>} ->
                                   [File, _] = binary:split(Filename, ~".beam"),
-                                  fix_beam_spdx_license(<<"lib/kernel/src/",  File/binary, ".erl">>, LicensesAndCopyrights, SPDX);
+                                  fix_beam_spdx_license(<<"lib/kernel/src/">>,  File, LicensesAndCopyrights, SPDX);
+
+                              #{~"fileName" := <<"bootstrap/lib/kernel/include/",Filename/binary>>} ->
+                                  [File, _] = binary:split(Filename, ~".beam"),
+                                  fix_beam_spdx_license(<<"lib/kernel/include/">>, File, LicensesAndCopyrights, SPDX);
+
                               #{~"fileName" := <<"bootstrap/lib/stdlib/ebin/",Filename/binary>>} ->
                                   [File, _] = binary:split(Filename, ~".beam"),
-                                  fix_beam_spdx_license(<<"lib/stdlib/src/", File/binary, ".erl">>, LicensesAndCopyrights, SPDX);
+                                  fix_beam_spdx_license(<<"lib/stdlib/src/">>, File, LicensesAndCopyrights, SPDX);
+
                               #{~"fileName" := <<"erts/preloaded/ebin/",Filename/binary>>} ->
                                   [File, _] = binary:split(Filename, ~".beam"),
-                                  fix_beam_spdx_license(<<"erts/preloaded/src/", File/binary, ".erl">>, LicensesAndCopyrights, SPDX);
+                                  fix_beam_spdx_license(<<"erts/preloaded/src/">>, File, LicensesAndCopyrights, SPDX);
+
                               #{~"fileName" := <<"erts/emulator/internal_doc/",Filename/binary>>} ->
                                   [File, _] = binary:split(Filename, ~".md"),
                                   fix_beam_spdx_license(<<"erts/preloaded/src/", File/binary, ".md">>, LicensesAndCopyrights, SPDX);
