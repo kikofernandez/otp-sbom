@@ -80,12 +80,15 @@ job-install:
 	sudo -E apt-get update
 	sudo -E apt-get install -y temurin-21-jdk
 
-	pip install setuptools wheel
-	pip install --proxy ${https_proxy} scancode-toolkit
 	sudo -E apt-get install locales && sudo sed -i 's@# en_US.UTF-8@en_US.UTF-8@g' /etc/locale.gen && locale-gen && \
 	sudo update-locale LANG=en_US.UTF-8
 
+	# pip install setuptools wheel
+	# pip install --proxy ${https_proxy} scancode-toolkit
+
 job-gen-sbom: ort
+	pip install setuptools wheel && \
+	pip install --proxy ${https_proxy} scancode-toolkit && \
 	export CWD=`pwd` && \
 	export HOME=$${CWD} && \
 	export ORT_CONFIG_DIR=$${CWD}/.ort/config && \
