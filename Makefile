@@ -94,7 +94,7 @@ test: ort
 	port=`echo $${https_proxy} | cut -d: -f3` && \
 	export JAVA_OPTS="-Dhttp.proxyHost=$${proxy} -Dhttp.proxyPort=$${port} -Dhttps.proxyHost=$${proxy} -Dhttps.proxyPort=$${port}" && \
 	cd ort && \
-	./gradlew cli:run --args="-c $${CWD}/config.yml analyze -i ${ERL_TOP} -o . -f JSON --repository-configuration-file=$${CWD}/.ort.yml"
+	./gradlew -x :notifier:classes cli:run --args="-c $${CWD}/config.yml analyze -i ${ERL_TOP} -o . -f JSON --repository-configuration-file=$${CWD}/.ort.yml"
 	# ./gradlew cli:run --args="-c ${CWD}/config.yml scan -o ${ERL_TOP} -f JSON -i ${CWD}/ort/cli/analyzer-result.json" && \
 	# ./gradlew cli:run --args="report -i ${ERL_TOP}/scan-result.json -o ${ERL_TOP} -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
 
