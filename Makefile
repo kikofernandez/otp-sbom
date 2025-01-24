@@ -83,17 +83,14 @@ job-install:
 	sudo -E apt-get install locales && sudo sed -i 's@# en_US.UTF-8@en_US.UTF-8@g' /etc/locale.gen && locale-gen && \
 	sudo update-locale LANG=en_US.UTF-8
 
-	# pip install setuptools wheel
-	# pip install --proxy ${https_proxy} scancode-toolkit
+	pip install setuptools wheel
+	pip install --proxy ${https_proxy} scancode-toolkit
 
 job-gen-sbom: ort
-	pip install setuptools wheel && \
-	pip install --proxy ${https_proxy} scancode-toolkit && \
 	export CWD=`pwd` && \
-	export HOME=$${CWD} && \
 	export ORT_CONFIG_DIR=$${CWD}/.ort/config && \
 	export ORT_DATA_DIR=$${CWD}/.ort && \
-	export PATH=/home/otptest/.local/bin:${PATH} && \
+	export PATH=${HOME}/.local/bin:${PATH} && \
 	proxy=`echo "$${https_proxy}" | rev | cut -d: -f2-3 | rev | cut -d"/" -f3` && \
 	port=`echo $${https_proxy} | cut -d: -f3` && \
 	export JAVA_OPTS="-Dhttp.proxyHost=$${proxy} -Dhttp.proxyPort=$${port} -Dhttps.proxyHost=$${proxy} -Dhttps.proxyPort=$${port} -Xmx16G" && \
