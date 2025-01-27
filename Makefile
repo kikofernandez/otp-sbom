@@ -17,7 +17,7 @@ ort:
 	git clone -b kiko/erlang-sbom https://github.com/kikofernandez/ort.git
 
 otp:
-	git clone -b maint https://github.com/erlang/otp.git
+	git clone -b master https://github.com/erlang/otp.git
 
 docker-build: otp ort
 	docker build --tag sbom \
