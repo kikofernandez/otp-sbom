@@ -13,8 +13,6 @@ all: sbom
 clean:
 	@-rm -rf otp ort otp/scan-result.json otp/bom.spdx.json bom.spdx.json
 
-# .PHONY: fix-sbom docker-build analyze scan report
-
 ort:
 	git clone -b kiko/erlang-sbom https://github.com/kikofernandez/ort.git
 
@@ -96,8 +94,8 @@ job-gen-sbom: ort
 	export JAVA_OPTS="-Dhttp.proxyHost=$${proxy} -Dhttp.proxyPort=$${port} -Dhttps.proxyHost=$${proxy} -Dhttps.proxyPort=$${port} -Xmx16G" && \
 	cd ort && \
 	./gradlew cli:run --args="-c $${CWD}/config.yml analyze -i ${ERL_TOP} -o . -f JSON --repository-configuration-file=$${CWD}/.ort.yml" && \
-	./gradlew cli:run --args="-c $${CWD}/config.yml scan -o ${ERL_TOP} -f JSON -i $${CWD}/ort/cli/analyzer-result.json" && \
-	./gradlew cli:run --args="report -i ${ERL_TOP}/scan-result.json -o ${ERL_TOP} -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
+	./gradlew cli:run --args="-c $${CWD}/config.yml scan -o . -f JSON -i $${CWD}/ort/cli/analyzer-result.json" && \
+	./gradlew cli:run --args="report -i $${CWD}/ort/cli//scan-result.json -o . -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
 
 # end
 #
