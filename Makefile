@@ -84,7 +84,7 @@ job-install:
 	pip install setuptools wheel
 	pip install --proxy ${https_proxy} scancode-toolkit
 
-job-gen-sbom: ort
+job-gen-sbom: ort otp
 	export CWD=`pwd` && \
 	export ORT_CONFIG_DIR=$${CWD}/.ort/config && \
 	export ORT_DATA_DIR=$${CWD}/.ort && \
@@ -93,7 +93,7 @@ job-gen-sbom: ort
 	port=`echo $${https_proxy} | cut -d: -f3` && \
 	export JAVA_OPTS="-Dhttp.proxyHost=$${proxy} -Dhttp.proxyPort=$${port} -Dhttps.proxyHost=$${proxy} -Dhttps.proxyPort=$${port} -Xmx16G" && \
 	cd ort && \
-	./gradlew cli:run --args="-c $${CWD}/config.yml analyze -i ${ERL_TOP} -o . -f JSON --repository-configuration-file=$${CWD}/.ort.yml" && \
+	./gradlew cli:run --args="-c $${CWD}/config.yml analyze -i $${CWD}/otp -o . -f JSON --repository-configuration-file=$${CWD}/.ort.yml" && \
 	./gradlew cli:run --args="-c $${CWD}/config.yml scan -o . -f JSON -i $${CWD}/ort/cli/analyzer-result.json" && \
 	./gradlew cli:run --args="report -i $${CWD}/ort/cli//scan-result.json -o . -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
 
