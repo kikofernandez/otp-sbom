@@ -27,8 +27,8 @@ docker-build: otp ort
 
 # Run outside Docker
 fix-sbom:
-	./otp_compliance.escript sbom otp-info --sbom-file otp/bom.spdx.json --input-file otp/scan-result.json
-	cp otp/bom.spdx.json . # Patched source SBOM
+	./otp_compliance.escript sbom otp-info --sbom-file ort/cli/bom.spdx.json --input-file ort/cli//scan-result.json
+	cp ort/cli//bom.spdx.json . # Patched source SBOM
 
 #
 # Run Docker commands
@@ -95,7 +95,7 @@ job-gen-sbom: ort otp
 	cd ort && \
 	./gradlew cli:run --args="-c $${CWD}/config.yml analyze -i $${CWD}/otp -o . -f JSON --repository-configuration-file=$${CWD}/.ort.yml" && \
 	./gradlew cli:run --args="-c $${CWD}/config.yml scan -o . -f JSON -i $${CWD}/ort/cli/analyzer-result.json" && \
-	./gradlew cli:run --args="report -i $${CWD}/ort/cli//scan-result.json -o . -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
+	./gradlew cli:run --args="report -i $${CWD}/ort/cli/scan-result.json -o . -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
 
 # end
 #
