@@ -91,7 +91,7 @@ job-gen-sbom: ort otp
 	export PATH=${HOME}/.local/bin:${PATH} && \
 	proxy=`echo "$${https_proxy}" | rev | cut -d: -f2-3 | rev | cut -d"/" -f3` && \
 	port=`echo $${https_proxy} | cut -d: -f3` && \
-	export JAVA_OPTS="-Dhttp.proxyHost=$${proxy} -Dhttp.proxyPort=$${port} -Dhttps.proxyHost=$${proxy} -Dhttps.proxyPort=$${port} -Xmx16G" && \
+	export JAVA_OPTS="-Dhttp.proxyHost=$${proxy} -Dhttp.proxyPort=$${port} -Dhttps.proxyHost=$${proxy} -Dhttps.proxyPort=$${port} -Xmx16g" && \
 	cd ort && \
 	./gradlew cli:run --args="-c $${CWD}/config.yml analyze -i $${CWD}/otp -o . -f JSON --repository-configuration-file=$${CWD}/.ort.yml" && \
 	./gradlew cli:run --args="-c $${CWD}/config.yml scan -o . -f JSON -i $${CWD}/ort/cli/analyzer-result.json" && \
