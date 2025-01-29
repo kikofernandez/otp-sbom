@@ -466,11 +466,11 @@ reuse_gen_toml(#{input_file := Input}) ->
                                add_annotation(Path, LicenseString, CopyrightString) ++ Acc
                        end, GitIgnore, Json),
     TOML = "version = 1\n~n" ++ Result,
-    io:format(TOML).
+    io:format("~ts", [TOML]).
 
 add_annotation(Path, License, Copyright) ->
-    LicenseId = io_lib:format("SPDX-License-Identifier = \"~s\"\n", [License]),
-    CopyrightId = io_lib:format("SPDX-FileCopyrightText = \"~s\"\n", [Copyright]),
+    LicenseId = io_lib:format("SPDX-License-Identifier = \"~ts\"\n", [License]),
+    CopyrightId = io_lib:format("SPDX-FileCopyrightText = \"~ts\"\n", [Copyright]),
     io_lib:format("[[annotations]]\npath = \"~s\"\n~s~s\n",
                   [Path, LicenseId, CopyrightId]).
 
