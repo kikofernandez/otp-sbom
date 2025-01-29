@@ -307,32 +307,32 @@ fix_beam_licenses(LicensesAndCopyrights,
                           case SPDX of
                               #{~"fileName" := ~"bootstrap/lib/stdlib/ebin/erl_parse.beam"} ->
                                   %% beam file auto-generated from grammar file
-                                  fix_beam_spdx_license(~"lib/stdlib/src/erl_parse.yrl", LicensesAndCopyrights, SPDX);
+                                  beam_files_have_no_license(fix_beam_spdx_license(~"lib/stdlib/src/erl_parse.yrl", LicensesAndCopyrights, SPDX));
 
                               #{~"fileName" := ~"bootstrap/lib/stdlib/ebin/unicode_util.beam"} ->
                                   %% follows from otp/lib/stdlib/uc_spec/README-UPDATE.txt
                                   io:format("ok"),
-                                  SPDX#{~"licenseConcluded" := ~"Unicode-3.0 AND Apache-2.0"};
+                                  beam_files_have_no_license(SPDX#{~"licenseConcluded" := ~"Unicode-3.0 AND Apache-2.0"});
 
                               #{~"fileName" := <<"bootstrap/lib/compiler/ebin/", Filename/binary>>} ->
                                   [File, _] = binary:split(Filename, ~".beam"),
-                                  fix_beam_spdx_license(<<"lib/compiler/src/">>, File, LicensesAndCopyrights, SPDX);
+                                  beam_files_have_no_license(fix_beam_spdx_license(<<"lib/compiler/src/">>, File, LicensesAndCopyrights, SPDX));
 
                               #{~"fileName" := <<"bootstrap/lib/kernel/ebin/",Filename/binary>>} ->
                                   [File, _] = binary:split(Filename, ~".beam"),
-                                  fix_beam_spdx_license(<<"lib/kernel/src/">>,  File, LicensesAndCopyrights, SPDX);
+                                  beam_files_have_no_license(fix_beam_spdx_license(<<"lib/kernel/src/">>,  File, LicensesAndCopyrights, SPDX));
 
                               #{~"fileName" := <<"bootstrap/lib/kernel/include/",Filename/binary>>} ->
                                   [File, _] = binary:split(Filename, ~".beam"),
-                                  fix_beam_spdx_license(<<"lib/kernel/include/">>, File, LicensesAndCopyrights, SPDX);
+                                  beam_files_have_no_license(fix_beam_spdx_license(<<"lib/kernel/include/">>, File, LicensesAndCopyrights, SPDX));
 
                               #{~"fileName" := <<"bootstrap/lib/stdlib/ebin/",Filename/binary>>} ->
                                   [File, _] = binary:split(Filename, ~".beam"),
-                                  fix_beam_spdx_license(<<"lib/stdlib/src/">>, File, LicensesAndCopyrights, SPDX);
+                                  beam_files_have_no_license(fix_beam_spdx_license(<<"lib/stdlib/src/">>, File, LicensesAndCopyrights, SPDX));
 
                               #{~"fileName" := <<"erts/preloaded/ebin/",Filename/binary>>} ->
                                   [File, _] = binary:split(Filename, ~".beam"),
-                                  fix_beam_spdx_license(<<"erts/preloaded/src/">>, File, LicensesAndCopyrights, SPDX);
+                                  beam_files_have_no_license(fix_beam_spdx_license(<<"erts/preloaded/src/">>, File, LicensesAndCopyrights, SPDX));
 
                               #{~"fileName" := <<"erts/emulator/internal_doc/",Filename/binary>>} ->
                                   [File, _] = binary:split(Filename, ~".md"),
@@ -364,11 +364,16 @@ fix_beam_spdx_license(Path, File, LicensesAndCopyrights, SPDX) when is_binary(Pa
             Spdx0
     end.
 
+beam_files_have_no_license(Spdx) ->
+    Spdx#{~"licenseInfoInFile" := [~"NONE"]}.
+
 none_to_noassertion(~"NONE") ->
     ~"NOASSERTION";
 none_to_noassertion(X) ->
     X.
 
+update_r18_licenses(_Path, License) when License =/= ~"NONE", License =/= ~"NOASSERTION" ->
+    License;
 update_r18_licenses(Path, License) ->
     case lists:member(Path, fixes_from_r18()) of
         true ->
@@ -380,15 +385,24 @@ update_r18_licenses(Path, License) ->
 
 %% fixes spdx license of non-beam files
 fix_spdx_license(#{~"fileName" := Path,
-                   ~"licenseInfoInFile" := [_],
-                   ~"licenseConcluded" := License,
+                   ~"licenseInfoInFiles" := [LicenseInFile],
+                   ~"licenseConcluded" := CuratedLicense,
                    ~"copyrightText" := C}=SPDX) ->
-    License1 = update_r18_licenses(Path, License),
     % license information in beam files is always empty/NONE,
     % but ORT may annotate the curations as findings.
-    SPDX#{ ~"licenseConcluded" := none_to_noassertion(License1),
-           ~"copyrightText" := none_to_noassertion(C),
-           ~"licenseInfoInFile" := [~"NONE"]
+    License = case LicenseInFile of
+                  ~"NONE" ->
+                      update_r18_licenses(Path, CuratedLicense);
+                  ~"NOASSERTION" ->
+                      update_r18_licenses(Path, CuratedLicense);
+                  _ ->
+                      %% Curations in ORT fix the licenseConcluded,
+                      %% so we take this one as good one.
+                      LicenseInFile
+              end,
+
+    SPDX#{ ~"licenseConcluded" := none_to_noassertion(License),
+           ~"copyrightText" := none_to_noassertion(C)
          };
 fix_spdx_license(#{~"copyrightText" := C}=SPDX) ->
     SPDX#{ ~"copyrightText" := none_to_noassertion(C)}.
