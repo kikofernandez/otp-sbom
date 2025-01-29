@@ -30,6 +30,12 @@ excludes:
 # Curations are used to fix wrongly detected licenses
 curations:
     license_findings:
+      - path: "lib/stdlib/uc_spec/**/*"
+        reason: "DATA_OF"
+        comment: >-
+          License not included in data files
+        concluded_license: "Unicode-3.0"
+
       - path: "bootstrap/bin/no_dot_erlang.boot"
         reason: "NOT_DETECTED"
         comment: >-
