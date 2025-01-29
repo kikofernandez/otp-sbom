@@ -266,17 +266,24 @@ check_git_history(Path, #{ ~"Apache-2.0" := Apache,
 
 
 sbom_otp(#{sbom_file  := SbomFile}=Input) ->
+    Sbom = decode(SbomFile),
+
     Licenses = path_to_license(Input),
     Copyrights = path_to_copyright(Input, Licenses),
-
-    Fixes = [{fun fix_name/2, ~"Erlang/OTP"},
-             {fun fix_creators_tooling/2, ~"Tool: otp_compliance"},
-             {fun fix_supplier/2, ~"Organization: Ericsson AB"},
-             {fun fix_download_location/2, ~"https://github.com/erlang/otp/releases"},
-             {fun fix_beam_licenses/2, {Licenses, Copyrights}} ],
-    Sbom = decode(SbomFile),
-    Spdx = lists:foldl(fun ({Fun, Data}, Acc) -> Fun(Data, Acc) end, Sbom, Fixes),
+    Fixes = sbom_fixes(Licenses, Copyrights),
+    Spdx = execute_sbom_fixes(Sbom, Fixes),
     file:write_file(SbomFile, json:encode(Spdx)).
+
+execute_sbom_fixes(Sbom, Fixes) ->
+    lists:foldl(fun ({Fun, Data}, Acc) -> Fun(Data, Acc) end, Sbom, Fixes).
+
+sbom_fixes(Licenses, Copyrights) ->
+    [{fun fix_name/2, ~"Erlang/OTP"},
+     {fun fix_creators_tooling/2, ~"Tool: otp_compliance"},
+     {fun fix_supplier/2, ~"Organization: Ericsson AB"},
+     {fun fix_download_location/2, ~"https://github.com/erlang/otp/releases"},
+     {fun fix_beam_licenses/2, {Licenses, Copyrights}} ].
+
 
 fix_name(Name, Sbom) ->
     Sbom#{ ~"name" := Name}.
@@ -303,50 +310,54 @@ fix_beam_licenses(LicensesAndCopyrights,
     Files1= lists:map(
               fun (SPDX) ->
                       %% Adds license and copyright from .erl or .hrl file to its .beam equivalent
-                      try
-                          case SPDX of
-                              #{~"fileName" := ~"bootstrap/lib/stdlib/ebin/erl_parse.beam"} ->
-                                  %% beam file auto-generated from grammar file
-                                  beam_files_have_no_license(fix_beam_spdx_license(~"lib/stdlib/src/erl_parse.yrl", LicensesAndCopyrights, SPDX));
+                      case SPDX of
+                          #{~"fileName" := <<"lib/stdlib/uc_spec/", _Filename/binary>>,
+                            ~"licenseInfoInFiles" := [License]}  when License =/= ~"NONE", License =/= ~"NOASSERTION"->
+                              files_have_no_license(SPDX#{~"licenseConcluded" := License});
 
-                              #{~"fileName" := ~"bootstrap/lib/stdlib/ebin/unicode_util.beam"} ->
-                                  %% follows from otp/lib/stdlib/uc_spec/README-UPDATE.txt
-                                  io:format("ok"),
-                                  beam_files_have_no_license(SPDX#{~"licenseConcluded" := ~"Unicode-3.0 AND Apache-2.0"});
+                          #{~"fileName" := <<"lib/stdlib/uc_spec/", _Filename/binary>>,
+                            ~"licenseInfoInFiles" := [License]}  when License =/= ~"NONE", License =/= ~"NOASSERTION"->
+                              files_have_no_license(SPDX#{~"licenseConcluded" := License});
 
-                              #{~"fileName" := <<"bootstrap/lib/compiler/ebin/", Filename/binary>>} ->
-                                  [File, _] = binary:split(Filename, ~".beam"),
-                                  beam_files_have_no_license(fix_beam_spdx_license(<<"lib/compiler/src/">>, File, LicensesAndCopyrights, SPDX));
+                          #{~"fileName" := ~"bootstrap/lib/stdlib/ebin/erl_parse.beam"} ->
+                              %% beam file auto-generated from grammar file
+                              files_have_no_license(fix_beam_spdx_license(~"lib/stdlib/src/erl_parse.yrl", LicensesAndCopyrights, SPDX));
 
-                              #{~"fileName" := <<"bootstrap/lib/kernel/ebin/",Filename/binary>>} ->
-                                  [File, _] = binary:split(Filename, ~".beam"),
-                                  beam_files_have_no_license(fix_beam_spdx_license(<<"lib/kernel/src/">>,  File, LicensesAndCopyrights, SPDX));
+                          #{~"fileName" := ~"bootstrap/lib/stdlib/ebin/unicode_util.beam"} ->
+                              %% follows from otp/lib/stdlib/uc_spec/README-UPDATE.txt
+                              files_have_no_license(SPDX#{~"licenseConcluded" := ~"Unicode-3.0 AND Apache-2.0"});
 
-                              #{~"fileName" := <<"bootstrap/lib/kernel/include/",Filename/binary>>} ->
-                                  [File, _] = binary:split(Filename, ~".beam"),
-                                  beam_files_have_no_license(fix_beam_spdx_license(<<"lib/kernel/include/">>, File, LicensesAndCopyrights, SPDX));
+                          #{~"fileName" := <<"erts/emulator/internal_doc/",Filename/binary>>} ->
+                              case binary:split(Filename, ~".md") of
+                                  [_File, _Ext] ->
+                                      SPDX#{~"licenseConcluded" := ~"Apache-2.0"};
+                                  _ ->
+                                      SPDX
+                              end;
 
-                              #{~"fileName" := <<"bootstrap/lib/stdlib/ebin/",Filename/binary>>} ->
-                                  [File, _] = binary:split(Filename, ~".beam"),
-                                  beam_files_have_no_license(fix_beam_spdx_license(<<"lib/stdlib/src/">>, File, LicensesAndCopyrights, SPDX));
-
-                              #{~"fileName" := <<"erts/preloaded/ebin/",Filename/binary>>} ->
-                                  [File, _] = binary:split(Filename, ~".beam"),
-                                  beam_files_have_no_license(fix_beam_spdx_license(<<"erts/preloaded/src/">>, File, LicensesAndCopyrights, SPDX));
-
-                              #{~"fileName" := <<"erts/emulator/internal_doc/",Filename/binary>>} ->
-                                  [File, _] = binary:split(Filename, ~".md"),
-                                  fix_beam_spdx_license(<<"erts/preloaded/src/", File/binary, ".md">>, LicensesAndCopyrights, SPDX);
-
-                              _ ->
-                                  fix_spdx_license(SPDX)
+                          #{~"fileName" := Filename} ->
+                              case bootstrap_mappings(Filename) of
+                                  {error, not_beam_file} ->
+                                      fix_spdx_license(SPDX);
+                                  {Path, Filename1} ->
+                                      case binary:split(Filename1, ~".beam") of
+                                          [File, _] ->
+                                              files_have_no_license(fix_beam_spdx_license(Path, File, LicensesAndCopyrights, SPDX));
+                                          _ ->
+                                              SPDX
+                                      end
+                              end
                           end
-                      catch
-                          _:_ ->
-                              fix_spdx_license(SPDX)
-                      end
               end, Files),
     Sbom#{ ~"files" := Files1, ~"packages" := [Package1]}.
+
+bootstrap_mappings(<<"bootstrap/lib/compiler/ebin/", Filename/binary>>) -> {~"lib/compiler/src/", Filename};
+bootstrap_mappings(<<"bootstrap/lib/kernel/ebin/",Filename/binary>>) -> {<<"lib/kernel/src/">>, Filename};
+bootstrap_mappings(<<"bootstrap/lib/kernel/include/",Filename/binary>>) -> {<<"lib/kernel/include/">>, Filename};
+bootstrap_mappings(<<"bootstrap/lib/stdlib/ebin/",Filename/binary>>) -> {<<"lib/stdlib/src/">>, Filename};
+bootstrap_mappings(<<"erts/preloaded/ebin/",Filename/binary>>) -> {<<"erts/preloaded/src/">>, Filename};
+bootstrap_mappings(_Other) ->
+    {error, not_beam_file}.
 
 %% fixes spdx license of beam files
 fix_beam_spdx_license(Path, {Licenses, Copyrights}, SPDX) ->
@@ -364,8 +375,9 @@ fix_beam_spdx_license(Path, File, LicensesAndCopyrights, SPDX) when is_binary(Pa
             Spdx0
     end.
 
-beam_files_have_no_license(Spdx) ->
-    Spdx#{~"licenseInfoInFile" := [~"NONE"]}.
+
+files_have_no_license(Spdx) ->
+    Spdx#{~"licenseInfoInFiles" := [~"NONE"]}.
 
 none_to_noassertion(~"NONE") ->
     ~"NOASSERTION";
