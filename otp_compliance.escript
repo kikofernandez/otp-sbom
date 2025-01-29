@@ -7,6 +7,8 @@
 -define(default_classified_result, "scan-result-classified.json").
 -define(default_scan_result, "scan-result.json").
 -define(diff_classified_result, "scan-result-diff.json").
+-define(license_ref_name, "LicenseRef-NOASSERTION").
+-define(license_ref_copyright, "Erlang/OTP contributors").
 
 
 -mode(compile).
@@ -469,36 +471,72 @@ classify_copyright_result(Filename) ->
                     end, #{}, Copyrights).
 
 
+%% reuse_gen_toml(#{input_file := Input}) ->
+%%     Json = decode(Input),
+%%     GitIgnore = lists:foldl(fun (Path, Acc) ->
+%%                         add_annotation(Path, ?license_ref_name(), ?license_ref_copyright()) ++ Acc
+%%                 end, "", gitignore_files()),
+%%     Result = maps:fold(fun(Path, #{~"Copyright" := C, ~"License" := L}, Acc) ->
+%%                                {LicenseString, CopyrightString}=
+%%                                    case L of
+%%                                        ~"NONE"  ->
+%%                                            {?license_ref_name(), "NOASSERTION"};
+%%                                        ~"NOASSERTION" ->
+%%                                            {?license_ref_name(), "NOASSERTION"};
+%%                                        _ ->
+%%                                            case C of
+%%                                                _ when C == ~"NOASSERTION"; C=="NONE" ->
+%%                                                    {L, ?license_ref_copyright()};
+%%                                                _ ->
+%%                                                    {L, C}
+%%                                            end
+
+%%                                    end,
+%%                                add_annotation(Path, LicenseString, CopyrightString) ++ Acc
+%%                        end, GitIgnore, Json),
+%%     TOML = "version = 1\n~n" ++ Result,
+%%     io:format("~ts", [TOML]).
+
+
 reuse_gen_toml(#{input_file := Input}) ->
-    Json = decode(Input),
+    #{~"files" := Files} = decode(Input),
     GitIgnore = lists:foldl(fun (Path, Acc) ->
-                        add_annotation(Path, "LicenseRef-erlang-contributors", "Erlang/OTP contributors") ++ Acc
+                        add_annotation(Path, ?license_ref_name, ?license_ref_copyright) ++ Acc
                 end, "", gitignore_files()),
-    Result = maps:fold(fun(Path, #{~"Copyright" := C, ~"License" := L}, Acc) ->
-                               LicenseString = case L of
-                                                   ~"NONE" ->
-                                                       "LicenseRef-erlang-contributors";
-                                                   ~"NOASSERTION" ->
-                                                       "LicenseRef-erlang-contributors";
-                                                   _ ->
-                                                       L
-                                               end,
-                               CopyrightString = case C of
-                                                     ~"NONE" ->
-                                                         "Erlang/OTP contributors";
-                                                     _ ->
-                                                         C
-                                                 end,
+    Result = lists:foldl(fun(#{~"copyrightText" := C, ~"licenseConcluded" := L, ~"fileName" := Path}, Acc) ->
+                               {LicenseString, CopyrightString}=
+                                   case L of
+                                       ~"NONE"  ->
+                                           {?license_ref_name, "NOASSERTION"};
+                                       ~"NOASSERTION" ->
+                                           {?license_ref_name, "NOASSERTION"};
+                                       _ ->
+                                           case C of
+                                               _ when C == ~"NOASSERTION"; C=="NONE" ->
+                                                   {L, ?license_ref_copyright};
+                                               _ ->
+                                                   {L, C}
+                                           end
+
+                                   end,
                                add_annotation(Path, LicenseString, CopyrightString) ++ Acc
-                       end, GitIgnore, Json),
-    TOML = "version = 1\n~n" ++ Result,
+                       end, GitIgnore, Files),
+    TOML = "version = 1\n\n" ++ Result,
     io:format("~ts", [TOML]).
+
 
 add_annotation(Path, License, Copyright) ->
     LicenseId = io_lib:format("SPDX-License-Identifier = \"~ts\"\n", [License]),
-    CopyrightId = io_lib:format("SPDX-FileCopyrightText = \"~ts\"\n", [Copyright]),
+    CopyrightId = io_lib:format("SPDX-FileCopyrightText = ~p\n", [conversion_from_bin(string:split(Copyright, "\n", all))]),
     io_lib:format("[[annotations]]\npath = \"~s\"\n~s~s\n",
                   [Path, LicenseId, CopyrightId]).
+
+conversion_from_bin([]) -> [];
+conversion_from_bin([Bin | Ls]) when is_binary(Bin) ->
+    [erlang:binary_to_list(Bin) | conversion_from_bin(Ls)];
+conversion_from_bin([NotBin | Ls]) when is_list(NotBin) ->
+    [NotBin | conversion_from_bin(Ls)].
+
 
 group_by_licenses(#{input_file := Filename,
                     exclude := ApplyExclude,
