@@ -62,11 +62,11 @@ analyze:
 
 scan:
 	cd ort && \
-	./gradlew cli:run --args="-c /github/config.yml scan -o /github/otp -f JSON -i /github/ort/cli/analyzer-result.json"
+	./gradlew cli:run --args="-c /github/config.yml scan -o . -f JSON -i /github/ort/cli/analyzer-result.json"
 
 report:
 	cd ort && \
-	./gradlew cli:run --args="report -i /github/otp/scan-result.json -o /github/otp -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
+	./gradlew cli:run --args="report -i /github/ort/cli/scan-result.json -o . -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
 
 # Job refers to a job in Jenkins
 job-install:
