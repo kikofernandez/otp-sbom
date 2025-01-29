@@ -305,6 +305,15 @@ fix_beam_licenses(LicensesAndCopyrights,
                       %% Adds license and copyright from .erl or .hrl file to its .beam equivalent
                       try
                           case SPDX of
+                              #{~"fileName" := ~"bootstrap/lib/stdlib/ebin/erl_parse.beam"} ->
+                                  %% beam file auto-generated from grammar file
+                                  fix_beam_spdx_license(~"lib/stdlib/src/erl_parse.yrl", LicensesAndCopyrights, SPDX);
+
+                              #{~"fileName" := ~"bootstrap/lib/stdlib/ebin/unicode_util.beam"} ->
+                                  %% follows from otp/lib/stdlib/uc_spec/README-UPDATE.txt
+                                  io:format("ok"),
+                                  SPDX#{~"licenseConcluded" := ~"Unicode-3.0 AND Apache-2.0"};
+
                               #{~"fileName" := <<"bootstrap/lib/compiler/ebin/", Filename/binary>>} ->
                                   [File, _] = binary:split(Filename, ~".beam"),
                                   fix_beam_spdx_license(<<"lib/compiler/src/">>, File, LicensesAndCopyrights, SPDX);
@@ -328,6 +337,7 @@ fix_beam_licenses(LicensesAndCopyrights,
                               #{~"fileName" := <<"erts/emulator/internal_doc/",Filename/binary>>} ->
                                   [File, _] = binary:split(Filename, ~".md"),
                                   fix_beam_spdx_license(<<"erts/preloaded/src/", File/binary, ".md">>, LicensesAndCopyrights, SPDX);
+
                               _ ->
                                   fix_spdx_license(SPDX)
                           end

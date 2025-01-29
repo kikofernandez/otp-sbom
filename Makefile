@@ -27,8 +27,8 @@ docker-build: otp ort
 
 # Run outside Docker
 fix-sbom:
-	./otp_compliance.escript sbom otp-info --sbom-file ort/cli/bom.spdx.json --input-file ort/cli//scan-result.json
-	cp ort/cli//bom.spdx.json . # Patched source SBOM
+	./otp_compliance.escript sbom otp-info --sbom-file ort/cli/bom.spdx.json --input-file ort/cli/scan-result.json
+	cp ort/cli/bom.spdx.json . # Patched source SBOM
 
 #
 # Run Docker commands
