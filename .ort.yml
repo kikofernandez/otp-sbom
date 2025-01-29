@@ -36,6 +36,12 @@ curations:
           License not included in data files
         concluded_license: "Unicode-3.0"
 
+      - path: "lib/stdlib/test/shell_docs_SUITE_data/**/*"
+        reason: "DATA_OF"
+        comment: >-
+          License not included in data files
+        concluded_license: "Apache-2.0"
+
       - path: "bootstrap/bin/no_dot_erlang.boot"
         reason: "NOT_DETECTED"
         comment: >-
