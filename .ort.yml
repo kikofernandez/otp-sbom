@@ -72,6 +72,7 @@ curations:
         concluded_license: "Unicode-3.0"
 
       - path: "lib/stdlib/test/shell_docs_SUITE_data/**/*"
+        detected_license: "NONE"
         reason: "DATA_OF"
         comment: >-
           License not included in data files

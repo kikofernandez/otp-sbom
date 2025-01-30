@@ -317,10 +317,6 @@ fix_beam_licenses(LicensesAndCopyrights,
                             ~"licenseInfoInFiles" := [License]}  when License =/= ~"NONE", License =/= ~"NOASSERTION"->
                               files_have_no_license(SPDX#{~"licenseConcluded" := License});
 
-                          #{~"fileName" := <<"lib/stdlib/uc_spec/", _Filename/binary>>,
-                            ~"licenseInfoInFiles" := [License]}  when License =/= ~"NONE", License =/= ~"NOASSERTION"->
-                              files_have_no_license(SPDX#{~"licenseConcluded" := License});
-
                           #{~"fileName" := ~"bootstrap/lib/stdlib/ebin/erl_parse.beam"} ->
                               %% beam file auto-generated from grammar file
                               files_have_no_license(fix_beam_spdx_license(~"lib/stdlib/src/erl_parse.yrl", LicensesAndCopyrights, SPDX));
@@ -470,34 +466,6 @@ classify_copyright_result(Filename) ->
                         Acc#{Path => CopyrightSt}
                     end, #{}, Copyrights).
 
-
-%% reuse_gen_toml(#{input_file := Input}) ->
-%%     Json = decode(Input),
-%%     GitIgnore = lists:foldl(fun (Path, Acc) ->
-%%                         add_annotation(Path, ?license_ref_name(), ?license_ref_copyright()) ++ Acc
-%%                 end, "", gitignore_files()),
-%%     Result = maps:fold(fun(Path, #{~"Copyright" := C, ~"License" := L}, Acc) ->
-%%                                {LicenseString, CopyrightString}=
-%%                                    case L of
-%%                                        ~"NONE"  ->
-%%                                            {?license_ref_name(), "NOASSERTION"};
-%%                                        ~"NOASSERTION" ->
-%%                                            {?license_ref_name(), "NOASSERTION"};
-%%                                        _ ->
-%%                                            case C of
-%%                                                _ when C == ~"NOASSERTION"; C=="NONE" ->
-%%                                                    {L, ?license_ref_copyright()};
-%%                                                _ ->
-%%                                                    {L, C}
-%%                                            end
-
-%%                                    end,
-%%                                add_annotation(Path, LicenseString, CopyrightString) ++ Acc
-%%                        end, GitIgnore, Json),
-%%     TOML = "version = 1\n~n" ++ Result,
-%%     io:format("~ts", [TOML]).
-
-
 reuse_gen_toml(#{input_file := Input}) ->
     #{~"files" := Files} = decode(Input),
     GitIgnore = lists:foldl(fun (Path, Acc) ->
@@ -528,7 +496,7 @@ reuse_gen_toml(#{input_file := Input}) ->
 add_annotation(Path, License, Copyright) ->
     LicenseId = io_lib:format("SPDX-License-Identifier = \"~ts\"\n", [License]),
     CopyrightId = io_lib:format("SPDX-FileCopyrightText = ~p\n", [conversion_from_bin(string:split(Copyright, "\n", all))]),
-    io_lib:format("[[annotations]]\npath = \"~s\"\n~s~s\n",
+    io_lib:format("[[annotations]]\npath = \"~ts\"\n~s~s\n",
                   [Path, LicenseId, CopyrightId]).
 
 conversion_from_bin([]) -> [];
@@ -806,7 +774,6 @@ gitignore_files() ->
      "lib/ssl/src/.gitignore",
      "lib/syntax_tools/doc/assets/.gitignore",
      "lib/wx/.gitignore",
-     "scan-result.json",
      "system/doc/.gitignore",
      "system/doc/assets/.gitignore",
      "system/doc/general_info/.gitignore",

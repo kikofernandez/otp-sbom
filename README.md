@@ -15,8 +15,15 @@ To create a SBOM, the following are prerequisites
 
 # Instructions
 
+To install things in your computer, and generate a SBOM.
 1. `make sbom`
-   This will clone Erlang/OTP `maint` branch, and create its source SBOM using ORT (oss-review-toolkit).
+   This will clone Erlang/OTP `master` branch, and create its source SBOM using ORT (oss-review-toolkit).
+
+To create a container and run the script in the container:
+1. `make docker`
+
+Both options run at the end `make fix-sbom` to populate some missing information
+in the SBOM, such as license concluded.
 
 # Extra
 
@@ -37,8 +44,8 @@ Requirements: Install `reuse` (https://github.com/fsfe/reuse-tool).
 
 The escript is also able to produce a `REUSE.toml` file
 that makes Erlang/OTP compliant with REUSE tools. The only drawback
-is that we need to create our own `LicenseRef-NONE` to write the
-`NONE` license (unknown) to all unknown files.
+is that we need to create our own `LicenseRef-NOASSERTION` to write the
+`NOASSERTION` license (unknown) to all unknown files.
 
 ``` shell
 cp otp/scan-result.json .
