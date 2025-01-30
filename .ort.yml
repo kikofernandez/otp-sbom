@@ -7,14 +7,6 @@ excludes:
       reason: "TEST_OF"
       comment: "This directory is not relevant."
 
-    - pattern: ".ort.yml"
-      reason: "OTHER"
-      comment: "This directory is not relevant."
-
-    - pattern: ".github/**/*"
-      reason: "OTHER"
-      comment: "This directory is not relevant."
-
     - pattern: "**/.gitignore"
       reason: "OTHER"
       comment: "This directory is not relevant."
@@ -30,6 +22,49 @@ excludes:
 # Curations are used to fix wrongly detected licenses
 curations:
     license_findings:
+
+      - path: "erts/emulator/test/bs_utf_SUITE_data/NormalizationTest.txt"
+        reason: "INCORRECT"
+        comment: >-
+          License mistaken by Scancode
+        concluded_license: "Unicode-3.0"
+
+      - path: "lib/stdlib/test/unicode_util_SUITE_data/GraphemeBreakTest.txt"
+        reason: "INCORRECT"
+        comment: >-
+          License mistaken by Scancode
+        concluded_license: "Unicode-3.0"
+
+      - path: "lib/stdlib/test/unicode_util_SUITE_data/GraphemeBreakTest.txt"
+        reason: "INCORRECT"
+        comment: >-
+          License mistaken by Scancode
+        concluded_license: "Unicode-3.0"
+
+      - path: "lib/stdlib/test/unicode_util_SUITE_data/LineBreakTest.txt"
+        reason: "INCORRECT"
+        comment: >-
+          License mistaken by Scancode
+        concluded_license: "Unicode-3.0"
+
+      - path: "lib/stdlib/test/unicode_util_SUITE_data/LineBreakTest.txt"
+        reason: "INCORRECT"
+        comment: >-
+          License mistaken by Scancode
+        concluded_license: "Unicode-3.0"
+
+      - path: "lib/stdlib/test/unicode_util_SUITE_data/NormalizationTest.txt"
+        reason: "INCORRECT"
+        comment: >-
+          License mistaken by Scancode
+        concluded_license: "Unicode-3.0"
+
+      - path: "lib/stdlib/test/unicode_util_SUITE_data/NormalizationTest.txt"
+        reason: "INCORRECT"
+        comment: >-
+          License mistaken by Scancode
+        concluded_license: "Unicode-3.0"
+
       - path: "lib/stdlib/uc_spec/**/*"
         reason: "DATA_OF"
         comment: >-
