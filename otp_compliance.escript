@@ -83,16 +83,7 @@ cli() ->
                                      """,
                                  arguments => [ sbom_option(),
                                                 input_option() ],
-                                 handler => fun sbom_otp/1},
-                         "fix-license" =>
-                              #{ help =>
-                                     """
-                                     Fixes licenses for files that existed since R18.
-                                     - Expects a classify-license input file
-                                     - Returns an updated classify-license file.
-                                     """,
-                                 arguments => [ input_option(?default_classified_result) ],
-                                 handler => fun fix_r18_licenses/1}}},
+                                 handler => fun sbom_otp/1}}},
              "explore" =>
                  #{  help => """
                             Explore license data.
@@ -240,32 +231,6 @@ base_file(DefaultFile) ->
 %%
 %% Commands
 %%
-
-fix_r18_licenses(#{input_file := Filename}=_Input) ->
-    Json = decode(Filename),
-    Result = case maps:get(~"NONE", Json, error) of
-                 error ->
-                     Json;
-                 Paths ->
-                     Json1 = maps:put(~"NONE", [], Json),
-                     lists:foldl(fun check_git_history/2, Json1, Paths)
-             end,
-    io:format("Apache-2.0 Before: ~p - After: ~p~n", [length(maps:get(~"Apache-2.0", Json)),
-                                                      length(maps:get(~"Apache-2.0", Result))]),
-    io:format("NONE Before: ~p - After: ~p~n", [length(maps:get(~"NONE", Json)),
-                                                length(maps:get(~"NONE", Result))]),
-    ok = file:write_file("no_assertion_output.json", json:encode(Result)).
-
-check_git_history(Path, #{ ~"Apache-2.0" := Apache,
-                           ~"NONE" := None}=Acc) ->
-    case os:cmd("cd otp && git cat-file -e origin/maint-18:" ++ erlang:binary_to_list(Path)) of
-        [] ->
-            io:format("~s\"~s\",~n", ["~", Path]),
-            Acc#{~"Apache-2.0" := [Path | Apache]};
-        _ ->
-            Acc#{~"NONE" := [Path | None]}
-    end.
-
 
 sbom_otp(#{sbom_file  := SbomFile}=Input) ->
     Sbom = decode(SbomFile),
