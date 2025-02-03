@@ -8,16 +8,18 @@
 # @file
 # @version 0.1
 
+.PHONY: test
 
 all: sbom
 clean:
 	@-rm -rf otp ort otp/scan-result.json otp/bom.spdx.json bom.spdx.json
 
 ort:
-	git clone -b kiko/erlang-sbom https://github.com/kikofernandez/ort.git
+	git clone -b 49.0.0 https://github.com/oss-review-toolkit/ort.git ort
 
+# e.g.,	REPO=https://github.com/erlang/otp.git, BRANCH=master
 otp:
-	git clone -b master https://github.com/erlang/otp.git
+	git clone -b master https://github.com/erlang/otp.git otp
 
 docker-build: otp ort
 	docker build --tag sbom \
@@ -28,7 +30,8 @@ docker-build: otp ort
 # Run outside Docker
 fix-sbom:
 	./otp_compliance.escript sbom otp-info --sbom-file ort/cli/bom.spdx.json --input-file ort/cli/scan-result.json
-	cp ort/cli/bom.spdx.json . # Patched source SBOM
+	cp ort/cli/bom.spdx.json test/fixedSbom.spdx.json # Patched source SBOM
+
 
 #
 # Run Docker commands
@@ -54,6 +57,8 @@ sbom:
 	make job-gen-sbom
 	make fix-sbom
 
+test:
+	diff test/bom.spdx.json test/fixedSbom.spdx.json
 
 # Commands to run inside the docker container
 analyze:
