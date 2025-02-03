@@ -31,7 +31,12 @@ docker-build: otp ort
 fix-sbom:
 	./otp_compliance.escript sbom otp-info --sbom-file ort/cli/bom.spdx.json --input-file ort/cli/scan-result.json
 	cp ort/cli/bom.spdx.json test/fixedSbom.spdx.json # Patched source SBOM
+	make test
 
+#
+# grep -r -n1 "licenseConcluded\": \"NOASSERTION\"" bom.spdx.json | grep fileName \
+# | cut -d\" -f4 | grep -v \.beam | grep -v \..md | grep -v ".*test.*/" | grep -v "/.*doc.*/" \
+# | grep -v "/.*examples.*/" > files_without_beam_md_test_doc_examples.txt
 
 #
 # Run Docker commands
@@ -104,3 +109,12 @@ job-gen-sbom: ort otp
 
 # end
 #
+
+./gradlew cli:run --args="-c ../config.yml analyze -i ../mytest/master-opu -o . -f JSON --repository-configuration-file=../.ort.yml"
+
+
+# TODO
+# - Test apollo
+#   ./gradlew cli:run --args="-c ../config.yml analyze -i ../mytest/master-opu -o . -f JSON --repository-configuration-file=../.ort.yml"
+
+# - Add String parameter with BRANCH and REPO
