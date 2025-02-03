@@ -385,11 +385,15 @@ none_to_noassertion(X) ->
 %%       are added to annotate a file with a license. this latter should not be a curation
 %%       in ORT, but in this script.
 %% fixes spdx license of non-beam files
-fix_spdx_license(#{~"fileName" := _Path,
-                   ~"licenseInfoInFiles" := [_LicenseInFile],
+fix_spdx_license(#{~"licenseInfoInFiles" := [LicenseInFile],
                    ~"licenseConcluded" := License,
                    ~"copyrightText" := C}=SPDX) ->
-    SPDX#{ ~"licenseConcluded" := none_to_noassertion(License),
+    License1 = case License of
+                   ~"NONE" -> LicenseInFile;
+                   ~"NOASSERTION" -> LicenseInFile;
+                   Other -> Other
+               end,
+    SPDX#{ ~"licenseConcluded" := none_to_noassertion(License1),
            ~"copyrightText" := none_to_noassertion(C)
          };
 fix_spdx_license(#{~"copyrightText" := C}=SPDX) ->
