@@ -31,7 +31,7 @@ docker-build: otp ort
 fix-sbom:
 	./otp_compliance.escript sbom otp-info --sbom-file ort/cli/bom.spdx.json --input-file ort/cli/scan-result.json
 	cp ort/cli/bom.spdx.json test/fixedSbom.spdx.json # Patched source SBOM
-	make test
+# make test
 
 #
 # grep -r -n1 "licenseConcluded\": \"NOASSERTION\"" bom.spdx.json | grep fileName \
@@ -76,7 +76,9 @@ scan:
 
 report:
 	cd ort && \
-	./gradlew cli:run --args="report -i /github/ort/cli/scan-result.json -o . -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
+	./gradlew cli:run --args="report -i /github/ort/cli/scan-result.json -o . -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON" && \
+	./gradlew cli:run --args="report -i /github/ort/cli/scan-result.json -o . --custom-license-texts-dir ../custom-license-texts --report-formats PlainTextTemplate"
+
 
 # Job refers to a job in Jenkins
 job-install:
@@ -105,12 +107,12 @@ job-gen-sbom: ort otp
 	cd ort && \
 	./gradlew cli:run --args="-c $${CWD}/config.yml analyze -i $${CWD}/otp -o . -f JSON --repository-configuration-file=$${CWD}/.ort.yml" && \
 	./gradlew cli:run --args="-c $${CWD}/config.yml scan -o . -f JSON -i $${CWD}/ort/cli/analyzer-result.json" && \
-	./gradlew cli:run --args="report -i $${CWD}/ort/cli/scan-result.json -o . -f SpdxDocument -O SpdxDocument=outputFileFormats=JSON"
+	./gradlew cli:run --args="report -i $${CWD}/ort/cli/scan-result.json -o . -f SpdxDocument,PlainTextTemplate -O SpdxDocument=outputFileFormats=JSON --custom-license-texts-dir $${CWD}/custom-license-texts"
 
 # end
 #
 
-./gradlew cli:run --args="-c ../config.yml analyze -i ../mytest/master-opu -o . -f JSON --repository-configuration-file=../.ort.yml"
+# ./gradlew cli:run --args="-c ../config.yml analyze -i ../mytest/master-opu -o . -f JSON --repository-configuration-file=../.ort.yml"
 
 
 # TODO
