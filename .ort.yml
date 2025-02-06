@@ -22,6 +22,11 @@ excludes:
 # Curations are used to fix wrongly detected licenses
 curations:
     license_findings:
+      - path: "lib/wx/src/gen/**/*"
+        reason: "INCORRECT"
+        comment: >-
+          Documentation was taken from wxWidgets, source code is Apache-2.0
+        concluded_license: "Apache-2.0 AND LicenseRef-wxwindows-free-doc"
 
       - path: "lib/edoc/doc/guides/chapter.md"
         reason: "INCORRECT"
