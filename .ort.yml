@@ -160,6 +160,12 @@ curations:
           Part of auto-generated primary bootstrap, and cannot have comments.
         concluded_license: "Apache-2.0"
 
+      - path: "lib/compiler/test/beam_ssa_check_SUITE_data/phis.erl"
+        reason: "INCORRECT"
+        comment: >-
+          License mistaken by Scancode
+        concluded_license: "Apache-2.0 OR LGPL-2.0-or-later"
+
       - path: "OTP_VERSION"
         reason: "NOT_DETECTED"
         comment: >-
